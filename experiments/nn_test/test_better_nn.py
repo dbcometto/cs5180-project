@@ -53,7 +53,7 @@ class MyNet(torch.nn.Module):
 
 # 2. NN making
 torch.manual_seed(2025)
-X = torch.randn(2000,2)*5
+X = torch.randn(1500,2)
 # print(f"X: {X[:2,:2]}")
 # print(X.shape)
 
@@ -63,12 +63,15 @@ def fn(X: torch.Tensor):
     torch.sin(2*np.pi*(X[:,0] - X[:,1]))
 ],dim=1)
 
+Xtest = torch.randn(200,2)
+Ytest = fn(Xtest)
+
 Y = fn(X)
 # print(f"Y: {Y[:2,:2]}")
 # print(Y.shape)
 
 model = MyNet()
-optimizer = torch.optim.Adam(model.parameters(),lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(),lr=0.001,weight_decay=1e-4)
 
 # print(model.weight)
 # print(model.bias)
@@ -80,7 +83,7 @@ def loss_fn(pred: torch.Tensor, truth: torch.Tensor):
 losses = []
 testlosses = []
 
-epochs = 50000
+epochs = 2200
 for i in tqdm(range(epochs)):
     
     optimizer.zero_grad()
@@ -91,12 +94,12 @@ for i in tqdm(range(epochs)):
     loss.backward()
     optimizer.step()
     
-    losses.append(loss.detach().numpy())
+    losses.append(loss.item())
 
-    Xtest = torch.randn(2000,2)*5
-    Y_pred = model(Xtest)
-    testloss = loss_fn(fn(Xtest),Y_pred)
-    testlosses.append(testloss)
+    with torch.no_grad():
+        Y_pred_test = model(Xtest)
+        testloss = loss_fn(Ytest,Y_pred_test)
+        testlosses.append(testloss.item())
 
 
     if i % (epochs/10) == 0:
@@ -122,24 +125,24 @@ axs[0].set_title("Loss vs Epoch")
 
 # Testing graph
 
-
-xvals = torch.linspace(-5,5,10)
-yvals = torch.linspace(-5,5,10)
+pts = 100
+xvals = torch.linspace(-1,1,pts)
+yvals = torch.linspace(-1,1,pts)
 
 Xgrid,Ygrid = torch.meshgrid(xvals,yvals,indexing='ij')
 print(Xgrid.shape)
 
 xyvals = torch.stack([Xgrid,Ygrid],dim=-1)
 print(xyvals.shape)
-xyvals_flat = xyvals.reshape((100,2))
+xyvals_flat = xyvals.reshape((pts**2,2))
 
 zvals_flat = fn(xyvals_flat)
-zvals = zvals_flat.detach().numpy().reshape(10,10,2)
+zvals = zvals_flat.detach().numpy().reshape(pts,pts,2)
 print(zvals.shape)
 
 
 predvals_flat = model(xyvals_flat)
-predvals = predvals_flat.detach().numpy().reshape(10,10,2)
+predvals = predvals_flat.detach().numpy().reshape(pts,pts,2)
 
 test_loss = loss_fn(predvals_flat,zvals_flat)
 print(f"Test Loss: {test_loss}")
