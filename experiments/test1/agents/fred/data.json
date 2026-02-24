@@ -1,0 +1,5 @@
+{
+    "policy_class": "RandomTabularPolicy",
+    "policy_module": "treescan.policies.random_tabular_policy",
+    "training_results": null
+}

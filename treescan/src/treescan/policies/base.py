@@ -10,7 +10,19 @@ class Policy(ABC):
         pass
 
     @abstractmethod
-    def update(self,*args,**kwargs):
-        """Given data, update the policy"""
+    def train(self,environment):
+        """Train the policy on an environment"""
         pass
+
+    @abstractmethod
+    def save(self,folderpath):
+        """Save the policy to a file"""
+        pass
+
+    @classmethod
+    @abstractmethod
+    def load(cls,folderpath):
+        """Load the policy from a file"""
+        pass
+    
     
