@@ -1,5 +1,6 @@
 """An agent class"""
 import numpy as np
+from tqdm import tqdm
 
 from typing import Optional
 import json
@@ -41,8 +42,8 @@ class Agent():
         if start_seed is not None:
             seed = start_seed
 
-        for j in range(runs):
-            for i in range(episodes):
+        for j in tqdm(range(runs),desc="Runs",leave=False):
+            for i in tqdm(range(episodes),desc="Episodes",leave=False):
                 T = self.generate_trajectory(environment,max_steps=max_steps,seed=seed)
             
                 G = 0
@@ -104,3 +105,5 @@ class Agent():
             agent.training_results = agent_data["training_results"]
 
             return agent
+        else:
+            raise FileNotFoundError(f"Cannot find agent at path {folderpath}")

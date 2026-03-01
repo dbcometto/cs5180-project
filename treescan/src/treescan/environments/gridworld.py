@@ -3,6 +3,7 @@
 import gymnasium as gym
 import numpy as np
 import pygame
+import torch
 
 from enum import IntEnum
 from typing import Optional
@@ -12,13 +13,16 @@ class GridWorld(gym.Env):
     """A simple grid world"""
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
-    def __init__(self,render_mode = None, step_limit = 99, fixed_goal = True):
+    def __init__(self,render_mode = None, step_limit = 99, fixed_goal = True, flatten_obs = False, one_hot_obs = False):
         """Create the simple grid world"""
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
         self.window_size = 512
         self.window = None
         self.clock = None
+
+        self.do_flatten_obs = flatten_obs
+        self.do_one_hot = one_hot_obs
 
         self._step_limit = step_limit
         self._current_step = -1
@@ -85,8 +89,15 @@ class GridWorld(gym.Env):
 
     def _get_obs(self):
         """Return an observaton"""
-        return {"agent": self._agent_location, "target": self._target_location}
+        obs = {"agent": self._agent_location, "target": self._target_location}
 
+        if self.do_one_hot:
+            obs = self._obs_to_one_hot(obs)
+
+        if self.do_flatten_obs:
+            obs = self._flatten_obs(obs)
+
+        return obs
 
     def _get_info(self):
         """Return extra info"""
@@ -94,6 +105,22 @@ class GridWorld(gym.Env):
                 "current_step": self._current_step,
                 "distance": np.linalg.norm(self._target_location-self._agent_location,ord=1),
                 }
+    
+    def _obs_to_one_hot(self,obs):
+        agent_pos = np.zeros_like(self._map)
+        agent_pos[obs["agent"]] = 1
+
+        goal_pos = np.zeros_like(self._map)
+        goal_pos[obs["target"]] = 1
+
+        return {"agent": agent_pos, "target": goal_pos}
+
+    def _flatten_obs(self,obs):
+        """Flatten the obs into a list"""
+        return torch.tensor([x for arr in obs.values() for x in arr.ravel()],dtype=torch.float)
+    
+
+
     
 
 
@@ -133,7 +160,7 @@ class GridWorld(gym.Env):
         terminated = np.array_equal(self._agent_location,self._target_location)
         truncated = self._current_step >= self._step_limit
 
-        reward = 1 if terminated else -0.01
+        reward = 1 if terminated else 0 #-0.01
 
         observation = self._get_obs()
         info = self._get_info()

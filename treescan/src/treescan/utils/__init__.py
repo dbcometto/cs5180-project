@@ -1,1 +1,1 @@
-from .utils import generate_trajectory
+from .utils import generate_trajectory, generate_trajectory_with_prob, append_return_to_trajectories
