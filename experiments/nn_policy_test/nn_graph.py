@@ -1,0 +1,60 @@
+"""First messing with stuff"""
+import gymnasium as gym
+import numpy as np
+import matplotlib.pyplot as plt
+import torch
+from collections import OrderedDict
+
+from treescan.policies import RandomTabularPolicy, MCTabularFirstVisitEpsilonControl
+from treescan.agents import Agent
+from treescan.networks.gridworld import SuperSimpleLogitNetwork
+from treescan.policies import DiscreteReinforce
+
+from treescan.environments import GridWorld
+
+friend_name = "perry2"
+test_name = "test0"
+
+agents_folderpath = "C:/workspace/cs5180rl-main/cs5180-project/experiments/nn_policy_test/agents"
+friend_folderpath = f"{agents_folderpath}/{friend_name}"
+friend = Agent.load(friend_folderpath)
+
+
+friend_test = friend.load_test(friend_folderpath,test_name)
+
+friend_test_return_avg = np.mean(np.array(friend_test["episode_returns"]),axis=0)
+
+
+fig,axs = plt.subplots(2,2,figsize=(16,8))
+
+# axs[0,0].plot(np.cumsum(friend.training_results["training_returns"]),label="friend")
+axs[0,0].plot(friend.training_results["training_returns"],label="friend")
+axs[0,0].set_xlabel("Episodes")
+# axs[0,0].set_ylabel("Total Return")
+axs[0,0].set_ylabel("Return")
+axs[0,0].set_title("Friend Training Results")
+axs[0,0].grid(True)
+axs[0,0].legend()
+
+# axs[1,0].plot(np.cumsum(friend.training_results["training_lengths"]),label="friend")
+axs[1,0].plot(friend.training_results["training_lengths"],label="friend")
+axs[1,0].set_xlabel("Episodes")
+axs[1,0].set_ylabel("Steps")
+axs[1,0].set_title("Friend Training Results")
+axs[1,0].grid(True)
+axs[1,0].legend()
+
+# axs[0,1].plot(np.cumsum(friend_test_return_avg),label="friend")
+axs[0,1].plot(friend_test_return_avg,label="friend")
+axs[0,1].set_xlabel("Episodes")
+# axs[0,1].set_ylabel("Total Return")
+axs[0,1].set_ylabel("Return")
+axs[0,1].set_title("Testing Results")
+axs[0,1].grid(True)
+axs[0,1].legend()
+
+
+
+
+
+plt.show()

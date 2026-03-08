@@ -160,7 +160,7 @@ class GridWorld(gym.Env):
         terminated = np.array_equal(self._agent_location,self._target_location)
         truncated = self._current_step >= self._step_limit
 
-        reward = 1 if terminated else 0 #-0.01
+        reward = 1 if terminated else -0.001 # was 1 else 0 and before that 1 else #-0.01
 
         observation = self._get_obs()
         info = self._get_info()

@@ -3,5 +3,6 @@
 from .base import Policy
 from .random_tabular_policy import RandomTabularPolicy
 from .mc_tabular import MCTabularFirstVisitEpsilonControl
-from .reinforce import DiscreteReinforce
+from .reinforce import DiscreteReinforce, DiscreteBatchReinforce, DiscreteBatchReinforceBaseline
 from .ppo import DiscretePPO
+from .a2c import DiscreteAdvantageActorCritic

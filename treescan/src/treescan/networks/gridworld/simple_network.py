@@ -3,6 +3,67 @@ import torch
 from collections import OrderedDict
 
 
+class SuperSimpleLogitNetwork(torch.nn.Module):
+        """A super simple network for logits"""
+
+        def __init__(self, input_width, hidden_width, output_width):
+            """Init a policy network for stochastic discrete actions"""
+            super().__init__()
+
+            self.network = torch.nn.Sequential(
+                OrderedDict(
+                    [
+                        ("input_layer", torch.nn.Linear(input_width,hidden_width)),
+                        ("nonlinear_layer", torch.nn.ReLU()),
+                        ("linear_layer", torch.nn.Linear(hidden_width,output_width))
+                        # ("linearlayer_1", torch.nn.Linear(hidden_width,hidden_width)),
+                        # ("nonlinearlayer_2", torch.nn.Tanh()),
+                    ]
+                )
+            )
+
+        def forward(self,X):
+            if X.dim() == 1:
+                 X = X.unsqueeze(0)
+
+            Y = self.network(X)
+            return Y
+        
+
+class SuperSimpleValueNetwork(torch.nn.Module):
+        """A super simple network for values"""
+
+        def __init__(self, input_width, hidden_width, output_width):
+            """Init a network for values"""
+            super().__init__()
+
+            self.network = torch.nn.Sequential(
+                OrderedDict(
+                    [
+                        ("input_layer", torch.nn.Linear(input_width,hidden_width)),
+                        ("nonlinear_layer", torch.nn.ReLU()),
+                        ("linear_layer", torch.nn.Linear(hidden_width,output_width))
+                        # ("linearlayer_1", torch.nn.Linear(hidden_width,hidden_width)),
+                        # ("nonlinearlayer_2", torch.nn.Tanh()),
+                    ]
+                )
+            )
+
+        def forward(self,X):
+            if X.dim() == 1:
+                 X = X.unsqueeze(0)
+
+            Y = self.network(X)
+            return Y
+
+
+
+
+
+
+
+
+
 class SimplePolicyNetwork(torch.nn.Module):
         """A policy network for stochatstic discrete actions for the gridworld env (sorry not generic)"""
 
@@ -44,8 +105,6 @@ class SimplePolicyNetwork(torch.nn.Module):
             h = self.backbone(Y)
             y = self.head(h)
             return y
-        
-
 
 
 class SimpleValueNetwork(torch.nn.Module):

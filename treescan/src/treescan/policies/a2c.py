@@ -16,7 +16,7 @@ from treescan.utils import generate_trajectory
 
 
 
-class DiscretePPO(Policy):
+class DiscreteAdvantageActorCritic(Policy):
     """A network policy using the REINFORCE algorithm on batches of trajectories"""
 
     def __init__(self, logit_network: torch.nn.Module, value_network: torch.nn.Module, actions: list, obs_dim: int, logit_lr: Optional[float] = 0.001, value_lr: Optional[float] = 0.001, logit_weight_decay: Optional[float] = 0, value_weight_decay: Optional[float] = 0):
@@ -55,20 +55,15 @@ class DiscretePPO(Policy):
     
     
 
-    def logit_loss_fn(self, G, value, old_log_probs, new_log_probs, epsilon):
+    def logit_loss_fn(self, log_probs, advantage):
         """Calculate loss for logit network"""
         # # TODO: maybe normalize
         # if G.numel() > 1:
         #     norm_G = (G - torch.mean(G))/(torch.std(G) + 1e-8)
         # else:
         #     norm_G = G
-
-        advantage = G - value
-        ratio = torch.exp(new_log_probs-old_log_probs)
-        clipped_ratio = torch.clip(ratio, ratio-epsilon, ratio+epsilon)
-
-        loss = -torch.min(ratio*advantage,clipped_ratio*advantage)
             
+        loss = -advantage*log_probs
         return torch.mean(loss)
     
     def value_loss_fn(self, G, value):
@@ -77,18 +72,15 @@ class DiscretePPO(Policy):
         return loss
 
 
-    def train(self, env: gym.Env, epochs: Optional[int] = 1,  batch_size: Optional[int] = 1, optimizer_epochs: Optional[int]=1, clip_epsilon: Optional[float]=0.2, gamma: Optional[float] = 1.0, start_seed: Optional[int] = None):
+    def train(self, env: gym.Env, epochs: Optional[int] = 1,  batch_size: Optional[int] = 1, gamma: Optional[float] = 1.0, entropy: Optional[float] = 0.0, start_seed: Optional[int] = None):
         """Generates a trajectory for each episode and trains the agent on them
         
         Args:
             env (gym.Env): the environment
             epochs (int, optional): number of training batches
             batch_size (int, optional): episodes per training batch
-            optimizer_epochs (int, optional): Number of optimizer steps per batch
-            clip_epsilon (float, optional): PPO surrogate loss clip value
             gamma (int, optional): discount factor
             start_seed (int, optional): starting trajectory seed
-            
             
         Returns:
             info (dict): 
@@ -105,9 +97,9 @@ class DiscretePPO(Policy):
         if start_seed is not None:
             seed = start_seed
 
-        for i in tqdm(range(epochs),desc="PPO",leave=False,position=1):
+        for i in tqdm(range(epochs),desc="A2C",leave=False,position=1):
 
-            # Create batch of data
+            
             T_batch = []
             for i in tqdm(range(batch_size),desc="Batch",leave=False,position=2):
                 T = generate_trajectory(env,self,seed=seed)
@@ -123,11 +115,13 @@ class DiscretePPO(Policy):
 
                     logits = self.logit_network(obs)
                     dist = torch.distributions.Categorical(logits=logits)
-                    log_prob = dist.log_prob(torch.tensor([a],dtype=int))
+                    log_prob = dist.log_prob(torch.tensor(a,dtype=int))
 
                     value = self.value_network(obs)
 
-                    new_transition = (obs,a,G,log_prob.squeeze(),value.squeeze())
+                    advantage = G - value.detach()
+
+                    new_transition = (log_prob.squeeze(),G,value.squeeze(),advantage.squeeze())
                     T_batch.append(new_transition)
 
                 training_returns.append(G)
@@ -135,34 +129,21 @@ class DiscretePPO(Policy):
                 if start_seed is not None:
                     seed += 1
 
-            obs_batch = torch.stack([t[0] for t in T_batch],dim=0).detach()
-            a_batch = torch.tensor([t[1] for t in T_batch],dtype=int).detach()
-            G_batch = torch.tensor([t[2] for t in T_batch], dtype=torch.float).unsqueeze(1).detach()
-            old_log_prob_batch = torch.stack([t[3] for t in T_batch],dim=0).detach()
-            value_batch = torch.stack([t[4] for t in T_batch],dim=0).detach()
+            log_prob_batch = torch.stack([t[0] for t in T_batch],dim=0)
+            G_batch = torch.tensor([t[1] for t in T_batch], dtype=torch.float)
+            value_batch = torch.stack([t[2] for t in T_batch],dim=0)
+            advantage_batch = torch.stack([t[3] for t in T_batch],dim=0)
 
-            # Optimize network
-            for i in tqdm(range(optimizer_epochs),desc="Optimizer Step",leave=False,position=2): 
+            self.logit_optimizer.zero_grad()
+            logit_loss = self.logit_loss_fn(log_prob_batch,advantage_batch)
+            logit_loss.backward()
+            self.logit_optimizer.step()
 
-                # New values
-                new_logits = self.logit_network(obs_batch)
-                dist = torch.distributions.Categorical(logits=new_logits)
-                new_log_prob_batch = dist.log_prob(a_batch)
+            self.value_optimizer.zero_grad()
+            value_loss = self.value_loss_fn(G_batch,value_batch)
+            value_loss.backward()
+            self.value_optimizer.step()
 
-                new_value_batch = self.value_network(obs_batch)
-
-                # Optimizer steps
-                self.logit_optimizer.zero_grad()
-                logit_loss = self.logit_loss_fn(G_batch,value_batch,old_log_prob_batch,new_log_prob_batch,clip_epsilon)
-                logit_loss.backward()
-                self.logit_optimizer.step()
-
-                self.value_optimizer.zero_grad()
-                value_loss = self.value_loss_fn(G_batch,new_value_batch)
-                value_loss.backward()
-                self.value_optimizer.step()
-
-            # append final loss
             losses.append([logit_loss.item(),value_loss.item()])
 
 
@@ -173,13 +154,11 @@ class DiscretePPO(Policy):
             "training_losses": losses,
             "epochs": epochs,
             "batch_size": batch_size,
-            "optimizer_epochs": optimizer_epochs,
-            "clip_epsilon": clip_epsilon,
             "gamma": gamma,
             "start_seed": start_seed
         }
 
-        # TODO: checkpoint saving and loading          
+                  
         return info
     
     def save(self,folderpath):

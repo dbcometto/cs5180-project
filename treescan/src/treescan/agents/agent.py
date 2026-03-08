@@ -1,6 +1,7 @@
 """An agent class"""
 import numpy as np
 from tqdm import tqdm
+import gymnasium as gym
 
 from typing import Optional
 import json
@@ -10,6 +11,7 @@ import importlib
 
 from treescan.policies import Policy
 from treescan.utils import generate_trajectory
+from treescan.utils import SpecialJSONEncoder
 
 
 
@@ -34,8 +36,25 @@ class Agent():
         self.training_results = results
         return results
     
-    def test(self, environment, episodes: int, runs: Optional[int] = 1, gamma: Optional[float] = 1.0, max_steps: Optional[int] = 1000, start_seed: Optional[int]=None):
-        """Test the agent on an environment"""
+    def test(self, environment: gym.Env, episodes: int, folderpath: Optional[str] = None, test_name: Optional[str] = None, runs: Optional[int] = 1, gamma: Optional[float] = 1.0, max_steps: Optional[int] = 1000, start_seed: Optional[int]=None):
+        """Test the agent on an environment
+        
+        Args:
+            environment (gym.Env): the environment
+            episodes (int): number of episodes per run
+            folderpath (string, optional): path to agent's folder
+            test_name (string, optional): test name
+            runs (int, optional): number of runs to average across
+            gamma (float, optional): discount factor
+            max_steps (int, optional): max steps per episode
+            start_seed (int,optional): starting episode seed
+            
+        Returns:
+            info (dict): 
+                - 'training_lengths' (list): lengths of each training episode
+                - 'training_returns' (list): rewards of each training episode
+                - 'training_losses' (list): losses at each training batch
+        """
         episode_lengths = np.empty((runs,episodes))*np.nan
         episode_returns = np.empty((runs,episodes))*np.nan
 
@@ -57,10 +76,18 @@ class Agent():
                 if start_seed is not None:
                     seed += 1
 
-            info = {
-                "episode_lengths": episode_lengths,
-                "episode_returns": episode_returns,
-            }
+        info = {
+            "test_name": test_name if test_name is not None else "unnamed_test",
+            "episode_lengths": episode_lengths,
+            "episode_returns": episode_returns,
+            "runs": runs,
+            "episodes": episodes,
+            "gamma": gamma,
+            "start_seed": start_seed,
+        }
+
+        if folderpath is not None:
+            self._save_test(info,folderpath)
 
         return info
 
@@ -107,3 +134,28 @@ class Agent():
             return agent
         else:
             raise FileNotFoundError(f"Cannot find agent at path {folderpath}")
+        
+
+
+    def _save_test(self, test_info, folderpath):
+        """Save the results of a test to a file"""
+
+        test_name = test_info["test_name"]
+
+        datapath = f"{folderpath}/tests"
+
+        # Save data
+        os.makedirs(datapath, exist_ok=True)
+        with open(f"{datapath}/{test_name}.json","w") as file:
+            json.dump(test_info,file,indent=4,cls=SpecialJSONEncoder)
+
+
+    def load_test(self, folderpath, test_name):
+        """Load the results of a test from a file"""
+        data_path = f"{folderpath}/tests/{test_name}.json"
+
+        if os.path.exists(data_path):
+            with open(data_path,"r") as file:
+                test_info = json.load(file)
+        
+        return test_info

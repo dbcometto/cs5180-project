@@ -2,6 +2,8 @@
 import gymnasium as gym
 
 from typing import Optional
+import json
+import numpy as np
 
 from treescan.policies import Policy
 
@@ -63,3 +65,15 @@ def append_return_to_trajectories(T,gamma):
                 obs,a,next_obs,r,term,trunc,_,old_prob = transition
                 G = r + gamma*G
                 new_T.append(transition.append(G))
+
+
+
+
+
+
+class SpecialJSONEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()  # convert ndarray to a list
+        return super().default(obj)
+    

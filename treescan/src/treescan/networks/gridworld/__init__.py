@@ -1,3 +1,3 @@
 """Networks for the gridworld environment"""
 
-from .simple_network import SimplePolicyNetwork, SimpleValueNetwork
+from .simple_network import SimplePolicyNetwork, SimpleValueNetwork, SuperSimpleLogitNetwork, SuperSimpleValueNetwork
