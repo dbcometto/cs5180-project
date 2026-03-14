@@ -1,4 +1,4 @@
-"""Defines MC policies"""
+"""Defines REINFORCE policies"""
 import gymnasium as gym
 from tqdm import tqdm
 import numpy as np

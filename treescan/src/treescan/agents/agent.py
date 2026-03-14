@@ -16,6 +16,7 @@ from treescan.utils import SpecialJSONEncoder
 
 
 class Agent():
+    """An agent class"""
 
     def __init__(self, policy: Policy):
         """Create an agent, who holds a policy and data"""

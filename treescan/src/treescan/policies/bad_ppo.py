@@ -1,4 +1,4 @@
-"""Defines MC policies"""
+"""Defines PPO policies (old)"""
 import gymnasium as gym
 from tqdm import tqdm
 import numpy as np
@@ -12,7 +12,7 @@ from treescan.policies.base import Policy
 from treescan.utils import generate_trajectory_with_prob
 
 class DiscretePPO(Policy):
-    """A network policy using the PPO algorithm"""
+    """A network policy using the (old) PPO algorithm"""
 
     def __init__(self, policy_network: torch.nn.Module, value_network: torch.nn.Module, 
                  actions: list, obs_dim: int, 

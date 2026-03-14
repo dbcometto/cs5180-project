@@ -1,4 +1,4 @@
-"""Defines MC policies"""
+"""Defines A2C policies"""
 import gymnasium as gym
 from tqdm import tqdm
 import numpy as np
@@ -17,7 +17,7 @@ from treescan.utils import generate_trajectory
 
 
 class DiscreteAdvantageActorCritic(Policy):
-    """A network policy using the REINFORCE algorithm on batches of trajectories"""
+    """A network policy using the A2C algorithm"""
 
     def __init__(self, logit_network: torch.nn.Module, value_network: torch.nn.Module, actions: list, obs_dim: int, logit_lr: Optional[float] = 0.001, value_lr: Optional[float] = 0.001, logit_weight_decay: Optional[float] = 0, value_weight_decay: Optional[float] = 0):
         """Instantiate the policy on a network
