@@ -5,8 +5,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from treescan.policies import RandomTabularPolicy, MCTabularFirstVisitEpsilonControl
-from treescan.agents import Agent
-
 from treescan.environments import GridWorld
 
 
