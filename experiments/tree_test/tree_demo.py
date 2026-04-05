@@ -13,14 +13,21 @@ import torch
 from collections import OrderedDict
 
 
-friend_name = "Bob"
+friend_name = "George"
+seed=2027
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/tree_test/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
+# friend = Agent.load_from_checkpoint(friend_folderpath,100)
 
-demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True)
+
+
+demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=True)
 
 
 # bob.generate_trajectory(demo_env,seed=2029)
-friend.generate_trajectory(demo_env,seed=2027)
+torch.manual_seed(seed)
+friend.generate_trajectory(demo_env,seed=seed)
+print("Finished")
+demo_env.hold_frame()

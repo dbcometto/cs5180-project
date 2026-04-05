@@ -29,17 +29,19 @@ class TreeWorld(gym.Env):
     # Env Params
     RANGE_2D = 4
     RANGE_3D = 3
+    NUM_TREES = 6
+    NUM_ROCKS = 10
 
     # Reward Params
-    REWARD_STEP = -0.01
-    REWARD_EXPLORE_TILE = 0.02
-    REWARD_SCAN = -1
-    REWARD_NEW_FACE = 0.6
-    REWARD_NEW_3D = 0.03
-    REWARD_FAIL = -100
-    REWARD_FAR_END = -50
-    REWARD_PERCENT_MAX = 100
-    REWARD_COMPLETE = 200
+    REWARD_STEP = -0.05
+    REWARD_EXPLORE_TILE = 0.2
+    REWARD_SCAN = -0.7
+    REWARD_NEW_FACE = 0.8
+    REWARD_NEW_3D = 0.05
+    REWARD_FAIL = -20
+    REWARD_FAR_END = -5
+    REWARD_PERCENT_MAX = 10
+    REWARD_COMPLETE = 20
     FAIL_PERCENT = 0.5
     COMPLETE_PERCENT = 0.99
     END_DIST_THRESHOLD = 2
@@ -60,7 +62,8 @@ class TreeWorld(gym.Env):
         self._current_step = -1
 
         # Establish hidden map
-        if use_fixed_map:
+        self.use_fixed_map = use_fixed_map
+        if self.use_fixed_map:
             self._hidden_map = np.array([   [0,0,0,0,0,0,0,0,0,0,2,0,0,0,0], # 1: trees, 2: rocks
                                             [0,0,0,1,0,0,0,0,0,0,0,0,0,0,0],
                                             [0,0,2,0,0,0,0,2,0,0,1,0,0,0,0],
@@ -74,7 +77,7 @@ class TreeWorld(gym.Env):
             map_rows = 10 
             map_cols = 15
         else:
-            pass # TODO: Random hidden maps
+            self._hidden_map = None
         
         # Establish knowledge maps
         self._map_rows = map_rows
@@ -88,7 +91,7 @@ class TreeWorld(gym.Env):
         
 
         # Define Gym Spaces
-        self.observation_space = gym.spaces.Box(0,1,shape=(1,map_rows,map_cols))
+        self.observation_space = gym.spaces.Box(0,1,shape=(11,map_rows,map_cols))
         self.action_space = gym.spaces.Discrete(7)
 
         # Define Movement Array
@@ -145,6 +148,22 @@ class TreeWorld(gym.Env):
         CLEAR = 0
         TREE = 1
         ROCK = 2
+
+    def _generate_map(self, rows, cols):
+        """Randomly generate a hidden map"""
+        map = np.zeros((rows,cols),dtype=int)
+        indices = np.arange(rows*cols)
+        total_placements = self.NUM_TREES + self.NUM_ROCKS
+        chosen = self.np_random.choice(indices,size=total_placements,replace=False)
+
+        tree_idxs = chosen[:self.NUM_TREES]
+        rock_idxs = chosen[self.NUM_TREES:]
+
+        flat = map.flat
+        flat[tree_idxs] = self.TILES.TREE
+        flat[rock_idxs] = self.TILES.ROCK
+
+        return map
 
 
 
@@ -373,6 +392,9 @@ class TreeWorld(gym.Env):
         super().reset(seed=seed)
         self._current_step = 0
 
+        if not self.use_fixed_map:
+            self._hidden_map = self._generate_map(self._map_rows, self._map_cols)
+
         # Choose a new starting location
         location_chosen = False
         while not location_chosen or not self._hidden_map[tuple(self._agent_start_location)] == self.TILES.CLEAR:
@@ -409,7 +431,7 @@ class TreeWorld(gym.Env):
         reward = 0 # updated at each phase
 
         # Phase 1: Move
-        proposed_location = np.clip(self._agent_location + self._action_to_position_change[action],[0,0],[self._map_rows-1,self._map_cols-1],dtype=int)
+        proposed_location = np.clip(self._agent_location + self._action_to_position_change[action],[0,0],[self._map_rows,self._map_cols],dtype=int)
 
         if self._hidden_map[tuple(proposed_location)] == self.TILES.CLEAR:
             self._agent_location = proposed_location
@@ -425,7 +447,7 @@ class TreeWorld(gym.Env):
 
         if action == self.ACTIONS.SCAN:
             new3dtiles, newfaces = self._update_map_3dscan()
-            reward += self.REWARD_NEW_3D*new3dtiles + self.REWARD_NEW_FACE*newfaces # Reward for 3D exploration and scanning tree faces
+            reward += self.REWARD_SCAN + self.REWARD_NEW_3D*new3dtiles + self.REWARD_NEW_FACE*newfaces # Reward for 3D exploration and scanning tree faces
         
 
         # Phase 3: Terminate
@@ -451,8 +473,6 @@ class TreeWorld(gym.Env):
 
         if self.render_mode == "human":
             self._render_frame()
-
-        print(reward)
 
         return observation, reward, terminated, truncated, info
     

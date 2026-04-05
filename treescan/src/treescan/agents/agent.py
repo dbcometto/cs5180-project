@@ -136,6 +136,29 @@ class Agent():
         else:
             raise FileNotFoundError(f"Cannot find agent at path {folderpath}")
         
+    @classmethod    
+    def load_from_checkpoint(cls, folderpath, checkpoint):
+        """Create an agent from a file and a checkpoint"""
+
+        # Load data
+        data_path = f"{folderpath}/data.json"
+        if os.path.exists(data_path):
+            with open(data_path,"r") as file:
+                agent_data = json.load(file)
+
+            # Make Policy
+            module = importlib.import_module(agent_data["policy_module"])
+            PolicyCls = getattr(module,agent_data["policy_class"])
+            policy = PolicyCls.load_from_checkpoint(folderpath, checkpoint)
+
+            # Make agent
+            agent = cls(policy)
+            agent.training_results = agent_data["training_results"]
+
+            return agent
+        else:
+            raise FileNotFoundError(f"Cannot find agent at path {folderpath}")
+        
 
 
     def _save_test(self, test_info, folderpath):

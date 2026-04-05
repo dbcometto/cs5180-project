@@ -1,0 +1,5 @@
+{
+    "policy_class": "DiscretePPO",
+    "policy_module": "treescan.policies.ppo",
+    "training_results": {}
+}

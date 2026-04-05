@@ -15,7 +15,7 @@ from treescan.environments import TreeWorld
 # better_bob = Agent.load(f"{agents_folderpath}/better_bob")
 
 
-demo_env = TreeWorld(render_mode="human")
+demo_env = TreeWorld(render_mode="human", use_fixed_map=False)
 
 
 # bob.generate_trajectory(demo_env,seed=2029)

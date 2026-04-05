@@ -12,7 +12,7 @@ from treescan.policies import DiscreteReinforce
 
 from treescan.environments import TreeWorld
 
-friend_name = "Bob"
+friend_name = "Fred"
 test_name = "test0"
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/tree_test/agents"

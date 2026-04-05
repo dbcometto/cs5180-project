@@ -19,7 +19,11 @@ from treescan.utils import generate_trajectory
 class DiscretePPO(Policy):
     """A network policy using the PPO algorithm"""
 
-    def __init__(self, logit_network: torch.nn.Module, value_network: torch.nn.Module, actions: list, obs_dim=None, logit_lr: Optional[float] = 0.001, value_lr: Optional[float] = 0.001, logit_weight_decay: Optional[float] = 0, value_weight_decay: Optional[float] = 0):
+    def __init__(self, logit_network: torch.nn.Module, value_network: torch.nn.Module, 
+                 actions: list, obs_dim=None, 
+                 logit_lr: Optional[float] = 0.001, value_lr: Optional[float] = 0.001, 
+                 logit_weight_decay: Optional[float] = 0, value_weight_decay: Optional[float] = 0,
+                 entropy_bonus: Optional[float] = 0.01, do_normalize_advantage: Optional[bool] = True):
         """Instantiate the policy on a network
         
         Args:
@@ -35,6 +39,9 @@ class DiscretePPO(Policy):
         self.actions = actions
         self.action_to_index = {a: i for i,a in enumerate(actions)}
         self.index_to_action = {i: a for i,a in enumerate(actions)}
+
+        self.entropy_bonus = entropy_bonus
+        self.do_normalize_advantage = do_normalize_advantage
 
         # dummy_obs = torch.zeros(obs_dim)
         # if self.logit_network(dummy_obs).shape[1] != len(self.actions):
@@ -52,22 +59,17 @@ class DiscretePPO(Policy):
 
         a = dist.sample()
         return a.item()
-    
-    
 
-    def logit_loss_fn(self, G, value, old_log_probs, new_log_probs, epsilon):
+    def logit_loss_fn(self, G, value, old_log_probs, new_log_probs, epsilon, entropy):
         """Calculate loss for logit network"""
-        # # TODO: maybe normalize
-        # if G.numel() > 1:
-        #     norm_G = (G - torch.mean(G))/(torch.std(G) + 1e-8)
-        # else:
-        #     norm_G = G
-
         advantage = G - value
-        ratio = torch.exp(new_log_probs-old_log_probs)
-        clipped_ratio = torch.clip(ratio, ratio-epsilon, ratio+epsilon)
+        if advantage.numel() > 1 and self.do_normalize_advantage:
+            advantage = (advantage - torch.mean(advantage))/(torch.std(advantage) + 1e-8)
 
-        loss = -torch.min(ratio*advantage,clipped_ratio*advantage)
+        ratio = torch.exp(new_log_probs-old_log_probs)
+        g_val = torch.clip(ratio,1-epsilon,1+epsilon)
+
+        loss = -torch.min(ratio*advantage, g_val*advantage) - self.entropy_bonus*entropy
             
         return torch.mean(loss)
     
@@ -77,7 +79,10 @@ class DiscretePPO(Policy):
         return loss
 
 
-    def train(self, env: gym.Env, epochs: Optional[int] = 1,  batch_size: Optional[int] = 1, optimizer_epochs: Optional[int]=1, clip_epsilon: Optional[float]=0.2, gamma: Optional[float] = 1.0, start_seed: Optional[int] = None):
+    def train(self, env: gym.Env, epochs: Optional[int] = 1,  
+              batch_size: Optional[int] = 1, optimizer_epochs: Optional[int]=1, 
+              clip_epsilon: Optional[float]=0.2, gamma: Optional[float] = 1.0, start_seed: Optional[int] = None,
+              resume_epoch: Optional[int] = None, folderpath: Optional[str] = None, checkpoint_interval: Optional[int] = 100):
         """Generates a trajectory for each episode and trains the agent on them
         
         Args:
@@ -96,90 +101,148 @@ class DiscretePPO(Policy):
                 - 'training_returns' (list): rewards of each training episode
                 - 'training_losses' (list): losses at each training batch
         """
-        training_returns = []
-        training_lengths = []
-        training_losses = []
+        info = {}
 
-        losses = []
+        if resume_epoch is not None and folderpath is not None:
+            try:
+                resume_epoch, seed, training_returns, training_lengths, losses = self.load_checkpoint(folderpath,resume_epoch)
+                print(f"Resuming from Epoch {resume_epoch}")
+            except Exception as e:
+                raise RuntimeError(f"Failed to resume from checkpoint at Epoch {resume_epoch}") from e
 
-        if start_seed is not None:
+        else:
+            training_returns = []
+            training_lengths = []
+            losses = []
+
             seed = start_seed
 
-        for i in tqdm(range(epochs),desc="PPO",leave=False,position=1):
+        start_epoch = resume_epoch if resume_epoch is not None else 0
+        epoch = start_epoch
 
-            # Create batch of data
-            T_batch = []
-            for i in tqdm(range(batch_size),desc="Batch",leave=False,position=2):
-                T = generate_trajectory(env,self,seed=seed)
-                training_lengths.append(len(T))
+        try:
+            for epoch in tqdm(range(start_epoch,epochs),desc="PPO",leave=False,position=1):
 
-                G = 0
-                
-                for j,transition in enumerate(reversed(T)):
-                    obs,a,next_obs,r,term,trunc,_ = transition
-                    a = self.action_to_index[a]
+                # Create batch of data
+                T_batch = []
+                for i in tqdm(range(batch_size),desc="Batch",leave=False,position=2):
+                    if seed is not None:
+                        torch.manual_seed(seed)
+                    T = generate_trajectory(env,self,seed=seed)
+                    
+                    training_lengths.append(len(T))
 
-                    G = r + gamma*G
+                    G = 0
+                    
+                    for j,transition in enumerate(reversed(T)):
+                        obs,a,next_obs,r,term,trunc,_ = transition
+                        a = self.action_to_index[a]
 
-                    logits = self.logit_network(obs.unsqueeze(0))
-                    dist = torch.distributions.Categorical(logits=logits)
-                    log_prob = dist.log_prob(torch.tensor(a,dtype=int))
+                        G = r + gamma*G
 
-                    value = self.value_network(obs.unsqueeze(0))
+                        logits = self.logit_network(obs.unsqueeze(0))
+                        dist = torch.distributions.Categorical(logits=logits)
+                        log_prob = dist.log_prob(torch.tensor(a,dtype=int))
 
-                    new_transition = (obs.squeeze(),a,G,log_prob.squeeze(),value.squeeze())
-                    T_batch.append(new_transition)
+                        value = self.value_network(obs.unsqueeze(0))
 
-                training_returns.append(G)
+                        new_transition = (obs.squeeze(),a,G,log_prob.squeeze(),value.squeeze())
+                        T_batch.append(new_transition)
 
-                if start_seed is not None:
-                    seed += 1
+                    training_returns.append(G)
 
-            obs_batch = torch.stack([t[0] for t in T_batch],dim=0).detach()
-            a_batch = torch.tensor([t[1] for t in T_batch],dtype=int).detach()
-            G_batch = torch.tensor([t[2] for t in T_batch], dtype=torch.float).unsqueeze(1).detach()
-            old_log_prob_batch = torch.stack([t[3] for t in T_batch],dim=0).detach()
-            value_batch = torch.stack([t[4] for t in T_batch],dim=0).detach()
+                    if start_seed is not None:
+                        seed += 1
 
-            # Optimize network
-            for i in tqdm(range(optimizer_epochs),desc="Optimizer Step",leave=False,position=2): 
+                obs_batch = torch.stack([t[0] for t in T_batch],dim=0).detach()
+                a_batch = torch.tensor([t[1] for t in T_batch],dtype=int).detach()
+                G_batch = torch.tensor([t[2] for t in T_batch], dtype=torch.float).unsqueeze(1).detach()
+                old_log_prob_batch = torch.stack([t[3] for t in T_batch],dim=0).detach()
+                value_batch = torch.stack([t[4] for t in T_batch],dim=0).detach()
 
-                # New values
-                new_logits = self.logit_network(obs_batch)
-                dist = torch.distributions.Categorical(logits=new_logits)
-                new_log_prob_batch = dist.log_prob(a_batch)
+                # Optimize network
+                for optim_step in tqdm(range(optimizer_epochs),desc="Optimizer Step",leave=False,position=2): 
 
-                new_value_batch = self.value_network(obs_batch)
+                    # New values
+                    new_logits = self.logit_network(obs_batch)
+                    dist = torch.distributions.Categorical(logits=new_logits)
+                    new_log_prob_batch = dist.log_prob(a_batch)
 
-                # Optimizer steps
-                self.logit_optimizer.zero_grad()
-                logit_loss = self.logit_loss_fn(G_batch,value_batch,old_log_prob_batch,new_log_prob_batch,clip_epsilon)
-                logit_loss.backward()
-                self.logit_optimizer.step()
+                    new_value_batch = self.value_network(obs_batch)
 
-                self.value_optimizer.zero_grad()
-                value_loss = self.value_loss_fn(G_batch,new_value_batch)
-                value_loss.backward()
-                self.value_optimizer.step()
+                    # Optimizer steps
+                    self.logit_optimizer.zero_grad()
+                    logit_loss = self.logit_loss_fn(G_batch,new_value_batch.detach(),old_log_prob_batch,new_log_prob_batch,clip_epsilon,torch.mean(dist.entropy()))
+                    logit_loss.backward()
+                    self.logit_optimizer.step()
 
-            # append final loss
-            losses.append([logit_loss.item(),value_loss.item()])
+                    self.value_optimizer.zero_grad()
+                    value_loss = self.value_loss_fn(G_batch,new_value_batch)
+                    value_loss.backward()
+                    self.value_optimizer.step()
 
+                # append final loss
+                losses.append([logit_loss.item(),value_loss.item()])
 
+                if folderpath is not None:
+                    if epoch % checkpoint_interval == 0:
+                        self.save_checkpoint(
+                            folderpath,
+                            epoch,
+                            seed,
+                            training_returns,
+                            training_lengths,
+                            losses
+                        )
 
-        info = {
-            "training_lengths": training_lengths,
-            "training_returns": training_returns,
-            "training_losses": losses,
-            "epochs": epochs,
-            "batch_size": batch_size,
-            "optimizer_epochs": optimizer_epochs,
-            "clip_epsilon": clip_epsilon,
-            "gamma": gamma,
-            "start_seed": start_seed
-        }
+            info = {
+                "training_lengths": training_lengths,
+                "training_returns": training_returns,
+                "training_losses": losses,
+                "epochs": epochs,
+                "batch_size": batch_size,
+                "optimizer_epochs": optimizer_epochs,
+                "clip_epsilon": clip_epsilon,
+                "gamma": gamma,
+                "start_seed": start_seed
+            }
 
-        # TODO: checkpoint saving and loading          
+            if folderpath is not None:
+                self.save_checkpoint(
+                                folderpath,
+                                epoch,
+                                seed,
+                                training_returns,
+                                training_lengths,
+                                losses
+                            )
+                print(f"Finished training and saved checkpoint at epoch {epoch} to file at {folderpath}")
+
+        except KeyboardInterrupt:
+            if folderpath is not None:
+                self.save_checkpoint(
+                                folderpath,
+                                epoch,
+                                seed,
+                                training_returns,
+                                training_lengths,
+                                losses
+                            )
+                print(f"Interrupted at epoch {epoch} and saved checkpoint to file at {folderpath}")
+        
+        except Exception as e:
+            if folderpath is not None:
+                self.save_checkpoint(
+                                folderpath,
+                                epoch,
+                                seed,
+                                training_returns,
+                                training_lengths,
+                                losses
+                            )
+                print(f"Exception at epoch {epoch} and saved checkpoint to file at {folderpath} | Exception: {e}")
+            raise e
+
         return info
     
     def save(self,folderpath):
@@ -194,3 +257,49 @@ class DiscretePPO(Policy):
 
         with open(f"{folderpath}/policy.pkl","rb") as file:
             return pickle.load(file)
+        
+
+    @classmethod
+    def load_from_checkpoint(cls,folderpath,checkpoint_epoch):
+        """Load the policy from a checkpoint file"""
+
+        with open(f"{folderpath}/policy.pkl","rb") as file:
+            policy = pickle.load(file)
+        
+        policy.load_checkpoint(folderpath,checkpoint_epoch)
+
+        return policy
+        
+
+    
+    def save_checkpoint(self, folderpath, epoch, seed, training_returns, training_lengths, losses):
+        """Save a training checkpoint to a file"""
+        path = f"{folderpath}/checkpoints"
+        os.makedirs(path, exist_ok=True)
+
+        checkpoint = {
+            "epoch": epoch,
+            "seed": seed,
+            "logit_network": self.logit_network.state_dict(),
+            "value_network": self.value_network.state_dict(),
+            "logit_optimizer": self.logit_optimizer.state_dict(),
+            "value_optimizer": self.value_optimizer.state_dict(),
+            "training_returns": training_returns,
+            "training_lengths": training_lengths,
+            "losses": losses
+        }
+
+        torch.save(checkpoint, f"{path}/ckpt_{epoch}.pt")
+
+
+    def load_checkpoint(self, folderpath, epoch):
+        """Load a training checkpoint from a file"""
+        path = f"{folderpath}/checkpoints/ckpt_{epoch}.pt"
+        checkpoint = torch.load(path, weights_only=False)
+
+        self.logit_network.load_state_dict(checkpoint["logit_network"])
+        self.value_network.load_state_dict(checkpoint["value_network"])
+        self.logit_optimizer.load_state_dict(checkpoint["logit_optimizer"])
+        self.value_optimizer.load_state_dict(checkpoint["value_optimizer"])
+
+        return checkpoint["epoch"], checkpoint["seed"], checkpoint["training_returns"], checkpoint["training_lengths"], checkpoint["losses"]
