@@ -15,7 +15,7 @@ from collections import OrderedDict
 
 friend_name = "perry2"
 
-agents_folderpath = "C:/workspace/cs5180rl-main/cs5180-project/experiments/nn_policy_test/agents"
+agents_folderpath = "C:/workspace/cs5180-project/experiments/nn_policy_test/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 
