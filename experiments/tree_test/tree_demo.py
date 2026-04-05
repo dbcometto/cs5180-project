@@ -19,8 +19,8 @@ agents_folderpath = "C:/workspace/cs5180-project/experiments/tree_test/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 
-demo_env = TreeWorld(render_mode=None,step_limit=999,obs_as_tensor=True)
+demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True)
 
 
 # bob.generate_trajectory(demo_env,seed=2029)
-friend.generate_trajectory(demo_env,seed=2026)
+friend.generate_trajectory(demo_env,seed=2027)

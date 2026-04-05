@@ -40,7 +40,7 @@ logit_network = SimpleConvNetwork(input_channels=obs_channels,output_width=actio
 value_network = SimpleConvNetwork(input_channels=obs_channels,output_width=1)
 policy = DiscretePPO(logit_network,value_network,actions=action_list,logit_lr=0.001,value_lr = 0.001)
 friend = Agent(policy)
-friend.train(train_env,epochs=300,batch_size=3,optimizer_epochs=5,clip_epsilon=0.2,start_seed=2025)
+friend.train(train_env,epochs=30,batch_size=3,optimizer_epochs=5,clip_epsilon=0.2,start_seed=2025)
 
 
 

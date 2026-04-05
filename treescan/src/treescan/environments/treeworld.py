@@ -30,6 +30,20 @@ class TreeWorld(gym.Env):
     RANGE_2D = 4
     RANGE_3D = 3
 
+    # Reward Params
+    REWARD_STEP = -0.01
+    REWARD_EXPLORE_TILE = 0.02
+    REWARD_SCAN = -1
+    REWARD_NEW_FACE = 0.6
+    REWARD_NEW_3D = 0.03
+    REWARD_FAIL = -100
+    REWARD_FAR_END = -50
+    REWARD_PERCENT_MAX = 100
+    REWARD_COMPLETE = 200
+    FAIL_PERCENT = 0.5
+    COMPLETE_PERCENT = 0.99
+    END_DIST_THRESHOLD = 2
+
     def __init__(self, 
                  map_rows = 10, map_cols = 15, 
                  step_limit = 99, window_width = 1024, window_height = 512,
@@ -157,6 +171,7 @@ class TreeWorld(gym.Env):
 
         obs = np.stack([
             self._map_agent_location,
+            self._map_start_location,
             self._map_2dknown,
             self._map_3dknown,
             self._map_occupied,
@@ -216,6 +231,12 @@ class TreeWorld(gym.Env):
         self._map_scanned_up = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 where tree is scanned, 0 elsewhere
         self._map_scanned_down = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 where tree is scanned, 0 elsewhere
 
+        self._map_start_location = np.zeros((self._map_rows,self._map_cols), dtype=int)     # all zeros except for a 1 at agent start location
+        try:
+            self._map_start_location[tuple(self._agent_start_location)] = 1
+        except:
+            pass
+
 
     def _update_map_agent_location(self):
         """Update the agent location map with the agent's current location"""
@@ -227,24 +248,33 @@ class TreeWorld(gym.Env):
 
 
     def _update_map_2dscan(self):
-        """Update the agent based off of a 2D scan"""
+        """Update the agent based off of a 2D scan, return the number of new tiles"""
         distances = self._calc_distance_grid()
+        newtiles = 0
         for row in range(self._map_rows):
             for col in range(self._map_cols):
                 dist = distances[row,col]
                 if dist < self.RANGE_2D:
-                    self._map_2dknown[row,col] = 1
+                    if self._map_2dknown[row,col] == 0:
+                        self._map_2dknown[row,col] = 1
+                        newtiles += 1
                     self._map_occupied[row,col] = 0 if self._hidden_map[row,col] == self.TILES.CLEAR else 1
+        return newtiles
 
 
     def _update_map_3dscan(self):
-        """Update the agent based off of a 2D scan"""
+        """Update the agent based off of a 2D scan, and return new tiles and new sides"""
         distances = self._calc_distance_grid()
+        newtiles = 0
+        newsides = 0
         for row in range(self._map_rows):
             for col in range(self._map_cols):
                 dist = distances[row,col]
                 if dist < self.RANGE_3D:
-                    self._map_3dknown[row,col] = 1
+                    if self._map_3dknown[row,col] == 0:
+                        self._map_3dknown[row,col] = 1
+                        newtiles += 1
+
                     self._map_occupied[row,col] = 0 if self._hidden_map[row,col] == self.TILES.CLEAR else 1
                     self._map_rocks[row,col] = 1 if self._hidden_map[row,col] == self.TILES.ROCK else 0
                     self._map_trees[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
@@ -253,14 +283,24 @@ class TreeWorld(gym.Env):
                     agent_row,agent_col = self._agent_location
                     
                     if agent_col < col:
+                        if self._map_scanned_left[row,col] == 0:
+                            newsides += 1
                         self._map_scanned_left[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
                     if agent_col > col:
+                        if self._map_scanned_right[row,col] == 0:
+                            newsides += 1
                         self._map_scanned_right[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
 
                     if agent_row < row:
+                        if self._map_scanned_up[row,col] == 0:
+                            newsides += 1
                         self._map_scanned_up[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
                     if agent_row > row:
+                        if self._map_scanned_down[row,col] == 0:
+                            newsides += 1
                         self._map_scanned_down[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
+
+        return newtiles, newsides
 
 
     def _calc_distance_grid(self):
@@ -277,15 +317,13 @@ class TreeWorld(gym.Env):
     
 
 
-    
-    def _get_random_location(self):
-        return self.np_random.integers([0,0],[self._map_rows-1,self._map_cols-1],size=(2,),dtype=int)
+
+    # Reset and helpers
 
     def reset(self, seed: Optional[int] = None, options: Optional[dict] = None):
         """Reset the environment"""
         super().reset(seed=seed)
         self._current_step = 0
-        self._reset_knowledge_maps()
 
         # Choose a new starting location
         location_chosen = False
@@ -295,6 +333,9 @@ class TreeWorld(gym.Env):
                 location_chosen = True
 
         self._agent_location = self._agent_start_location.copy()
+        
+        # Reset maps
+        self._reset_knowledge_maps()
         self._update_map_agent_location()
 
 
@@ -306,10 +347,13 @@ class TreeWorld(gym.Env):
 
         return observation, info
     
+    def _get_random_location(self):
+        return self.np_random.integers([0,0],[self._map_rows-1,self._map_cols-1],size=(2,),dtype=int)
+    
 
 
 
-
+    # Step and Helpers
 
     def step(self,action):
         """Take an action: update the environment and return the observation"""
@@ -324,18 +368,35 @@ class TreeWorld(gym.Env):
 
         self._update_map_agent_location()
 
+        reward += self.REWARD_STEP # Penalty for each step
+
 
         # Phase 2: Scan
-        self._update_map_2dscan()
+        newtiles = self._update_map_2dscan()
+        reward += self.REWARD_EXPLORE_TILE*newtiles # Reward for exploring new tiles
+
         if action == self.ACTIONS.SCAN:
-            self._update_map_3dscan()
+            new3dtiles, newfaces = self._update_map_3dscan()
+            reward += self.REWARD_NEW_3D*new3dtiles + self.REWARD_NEW_FACE*newfaces # Reward for 3D exploration and scanning tree faces
+        
 
         # Phase 3: Terminate
-
         terminated = True if action == self.ACTIONS.END else False
         truncated = True if self._current_step >= self._step_limit else False
 
-        # reward = 1 if terminated else -0.001 # was 1 else 0 and before that 1 else #-0.01
+        if terminated or truncated:
+            percent = self._calc_percent_complete()
+
+            if percent < self.FAIL_PERCENT: # Piecewise reward for completion
+                reward += self.REWARD_FAIL
+            elif percent < self.COMPLETE_PERCENT:
+                reward += self.REWARD_PERCENT_MAX*((percent-self.FAIL_PERCENT)/(self.COMPLETE_PERCENT-self.FAIL_PERCENT))**4  # Gives more reward as closer to percent complete, *0 at fail and *1 at complete
+            elif percent >= self.COMPLETE_PERCENT:
+                reward += self.REWARD_COMPLETE
+
+            if np.linalg.norm(self._agent_location-self._agent_start_location) > self.END_DIST_THRESHOLD: # If too far at end, give penalty
+                reward += self.REWARD_FAR_END
+
 
         observation = self._get_obs()
         info = self._get_info()
@@ -346,6 +407,17 @@ class TreeWorld(gym.Env):
         return observation, reward, terminated, truncated, info
     
 
+    def _calc_percent_complete(self):
+        """Calculate the percent (fraction) of tree sides scanned"""
+        num_sides = 0
+        num_scans = 0
+        for row in range(self._map_rows):
+            for col in range(self._map_cols):
+                if self._hidden_map[row,col] == self.TILES.TREE:
+                    num_sides += 4
+                    num_scans += self._map_scanned_left[row,col] + self._map_scanned_right[row,col] + self._map_scanned_up[row,col] + self._map_scanned_down[row,col]
+
+        return num_scans/num_sides
 
 
 
@@ -354,9 +426,7 @@ class TreeWorld(gym.Env):
 
 
 
-
-
-
+    # Render and Helpers
 
     def render(self):
         """Return render results of the treeworld"""
