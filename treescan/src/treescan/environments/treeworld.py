@@ -255,10 +255,11 @@ class TreeWorld(gym.Env):
             for col in range(self._map_cols):
                 dist = distances[row,col]
                 if dist < self.RANGE_2D:
-                    if self._map_2dknown[row,col] == 0:
-                        self._map_2dknown[row,col] = 1
-                        newtiles += 1
-                    self._map_occupied[row,col] = 0 if self._hidden_map[row,col] == self.TILES.CLEAR else 1
+                    if self._check_visibility(row,col):
+                        if self._map_2dknown[row,col] == 0:
+                            self._map_2dknown[row,col] = 1
+                            newtiles += 1
+                        self._map_occupied[row,col] = 0 if self._hidden_map[row,col] == self.TILES.CLEAR else 1
         return newtiles
 
 
@@ -271,34 +272,36 @@ class TreeWorld(gym.Env):
             for col in range(self._map_cols):
                 dist = distances[row,col]
                 if dist < self.RANGE_3D:
-                    if self._map_3dknown[row,col] == 0:
-                        self._map_3dknown[row,col] = 1
-                        newtiles += 1
+                    if self._check_visibility(row,col):
+                        if self._map_3dknown[row,col] == 0:
+                            self._map_3dknown[row,col] = 1
+                            newtiles += 1
 
-                    self._map_occupied[row,col] = 0 if self._hidden_map[row,col] == self.TILES.CLEAR else 1
-                    self._map_rocks[row,col] = 1 if self._hidden_map[row,col] == self.TILES.ROCK else 0
-                    self._map_trees[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
+                        self._map_occupied[row,col] = 0 if self._hidden_map[row,col] == self.TILES.CLEAR else 1
+                        self._map_rocks[row,col] = 1 if self._hidden_map[row,col] == self.TILES.ROCK else 0
+                        self._map_trees[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
 
-                    # Check visibility
-                    agent_row,agent_col = self._agent_location
-                    
-                    if agent_col < col:
-                        if self._map_scanned_left[row,col] == 0:
-                            newsides += 1
-                        self._map_scanned_left[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
-                    if agent_col > col:
-                        if self._map_scanned_right[row,col] == 0:
-                            newsides += 1
-                        self._map_scanned_right[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
+                        # Check visibility
+                        if self._hidden_map[row,col] == self.TILES.TREE:
+                            agent_row,agent_col = self._agent_location
+                            
+                            if agent_col < col:
+                                if self._map_scanned_left[row,col] == 0:
+                                    newsides += 1
+                                self._map_scanned_left[row,col] = 1
+                            if agent_col > col:
+                                if self._map_scanned_right[row,col] == 0:
+                                    newsides += 1
+                                self._map_scanned_right[row,col] = 1
 
-                    if agent_row < row:
-                        if self._map_scanned_up[row,col] == 0:
-                            newsides += 1
-                        self._map_scanned_up[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
-                    if agent_row > row:
-                        if self._map_scanned_down[row,col] == 0:
-                            newsides += 1
-                        self._map_scanned_down[row,col] = 1 if self._hidden_map[row,col] == self.TILES.TREE else 0
+                            if agent_row < row:
+                                if self._map_scanned_up[row,col] == 0:
+                                    newsides += 1
+                                self._map_scanned_up[row,col] = 1
+                            if agent_row > row:
+                                if self._map_scanned_down[row,col] == 0:
+                                    newsides += 1
+                                self._map_scanned_down[row,col] = 1
 
         return newtiles, newsides
 
@@ -313,6 +316,51 @@ class TreeWorld(gym.Env):
                 distances[row,col] = dist
 
         return distances
+
+    def _find_cell_path(self,r_target,c_target):
+        """Uses the Bresenham Algorithm to determine which cells are viewed from the agent's location towards the target cell"""
+        r, c =  self._agent_location
+        dr = abs(r_target - r)
+        dc = abs(c_target - c)
+
+        r_step = 1 if r_target > r else -1
+        c_step = 1 if c_target > c else -1
+
+        cells = [[r,c]]
+        if dc >= dr:
+            p = 2*dr - dc
+            while c != c_target:
+                c += c_step
+                if p < 0:
+                    p += 2*dr
+                else:
+                    r += r_step
+                    p += 2*(dr-dc)
+                cells.append([r,c])
+        else:
+            p = 2*dc - dr
+            while r != r_target:
+                r += r_step
+                if p < 0:
+                    p += 2*dc
+                else:
+                    c += c_step
+                    p += 2*(dc-dr)
+                cells.append([r,c])
+            
+
+        return cells
+    
+    def _check_visibility(self,r,c):
+        """Check whether a cell is visible from the agent's location"""
+        cells_viewed = self._find_cell_path(r,c)
+
+        visible = True
+        for cell in cells_viewed[1:-1]:
+            if self._hidden_map[*cell] != self.TILES.CLEAR:
+                visible = False
+
+        return visible
     
     
 
@@ -403,6 +451,8 @@ class TreeWorld(gym.Env):
 
         if self.render_mode == "human":
             self._render_frame()
+
+        print(reward)
 
         return observation, reward, terminated, truncated, info
     
