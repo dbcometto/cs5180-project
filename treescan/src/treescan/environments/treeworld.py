@@ -35,11 +35,12 @@ class TreeWorld(gym.Env):
                  step_limit = 99, window_width = 1024, window_height = 512,
                  render_mode = None, 
                  use_fixed_map = True, 
-                 flatten_obs = False, one_hot_obs = False):
+                 flatten_obs = False, one_hot_obs = False, obs_as_tensor = True):
         """Create the tree world"""
 
         self.do_flatten_obs = flatten_obs
         self.do_one_hot = one_hot_obs
+        self.obs_as_tensor = obs_as_tensor
 
         self._step_limit = step_limit
         self._current_step = -1
@@ -166,6 +167,9 @@ class TreeWorld(gym.Env):
             self._map_scanned_up,
             self._map_scanned_down,
         ], axis=0)
+
+        if self.obs_as_tensor:
+            obs = torch.tensor(obs,dtype=torch.float32)
 
         # if self.do_one_hot:
         #     obs = self._obs_to_one_hot(obs)
@@ -310,7 +314,7 @@ class TreeWorld(gym.Env):
     def step(self,action):
         """Take an action: update the environment and return the observation"""
         self._current_step += 1
-        reward = -1 # updated at each phase
+        reward = 0 # updated at each phase
 
         # Phase 1: Move
         proposed_location = np.clip(self._agent_location + self._action_to_position_change[action],[0,0],[self._map_rows-1,self._map_cols-1],dtype=int)

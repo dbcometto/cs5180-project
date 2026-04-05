@@ -1,70 +1,52 @@
-"""First attempt messing with stuff"""
+"""Some testing with pytorch"""
+
+import torch
+from tqdm import tqdm
+from collections import OrderedDict 
 
 import gymnasium as gym
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import time
 
-from treescan.policies import RandomTabularPolicy, MCTabularFirstVisitEpsilonControl
+from treescan.policies import DiscreteReinforce, DiscretePPO, DiscreteBatchReinforce, DiscreteBatchReinforceBaseline, DiscreteAdvantageActorCritic
+from treescan.networks.treeworld import SimpleConvNetwork
 from treescan.agents import Agent
 
-from treescan.environments import GridWorld
+from treescan.environments import TreeWorld
 
 
-# my_env = GridWorld(render_mode="human")
 
-# policy = RandomTabularPolicy(my_env.ACTIONS)
-# fred = Agent(policy)
+        
 
 
-# obs,info = my_env.reset(seed=2025)
+train_env = TreeWorld(render_mode=None,step_limit=999,obs_as_tensor=True)
+obs,_ = train_env.reset(seed=2025)
 # print(obs)
 
-# steps = 10
-# for i in range(steps):
-#     act = fred.choose_action(my_env,obs)
-#     new_obs,_,_,_,_ = my_env.step(act)
-#     print(f"{act} - {new_obs}")
-# my_env.hold_frame()
+obs_channels = obs.shape[0]
+print(obs_channels)
+action_list = [a for a in train_env.ACTIONS]
+action_dim = len(action_list)
 
 
 
-# done = False
-# obs,info = my_env.reset(seed=2025)
-# print(obs)
-# while not done:
-#     act = fred.choose_action(my_env,obs)
-#     new_obs,reward,term,trunc,info = my_env.step(act)
-#     done = term or trunc
-#     print(f"{act} - {new_obs}")
-# my_env.hold_frame()
+agent_name = "Bob"
 
-# obs,info = my_env.reset(seed=2025)
-# print(obs)
-# print(fred.generate_trajectory(my_env))
-# my_env.hold_frame()
+start = time.time()
 
-
-
-train_env = GridWorld(render_mode=None,step_limit=999,fixed_goal=True)
-
-states = train_env.return_state_list()
-
-# fred = Agent(
-#     RandomTabularPolicy(train_env.ACTIONS)
-# )
-
-new_friend = Agent(
-    MCTabularFirstVisitEpsilonControl(train_env.ACTIONS,states)
-)
-
-
-train_results = new_friend.train(train_env,episodes=1000)
-# print(train_results)
-
-agents_folderpath = "C:/workspace/cs5180rl-main/cs5180-project/experiments/test1/agents"
-# fred.save(f"{agents_folderpath}/fred")
-new_friend.save(f"{agents_folderpath}/bob2")
+# PPO
+logit_network = SimpleConvNetwork(input_channels=obs_channels,output_width=action_dim)
+value_network = SimpleConvNetwork(input_channels=obs_channels,output_width=1)
+policy = DiscretePPO(logit_network,value_network,actions=action_list,logit_lr=0.001,value_lr = 0.001)
+friend = Agent(policy)
+friend.train(train_env,epochs=300,batch_size=3,optimizer_epochs=5,clip_epsilon=0.2,start_seed=2025)
 
 
 
 
+
+agents_folderpath = "C:/workspace/cs5180-project/experiments/tree_test/agents"
+friend.save(f"{agents_folderpath}/{agent_name}")
+
+print(f"Finished training after {time.time()-start:4.1f}s")

@@ -19,7 +19,7 @@ from treescan.utils import generate_trajectory
 class DiscretePPO(Policy):
     """A network policy using the PPO algorithm"""
 
-    def __init__(self, logit_network: torch.nn.Module, value_network: torch.nn.Module, actions: list, obs_dim: int, logit_lr: Optional[float] = 0.001, value_lr: Optional[float] = 0.001, logit_weight_decay: Optional[float] = 0, value_weight_decay: Optional[float] = 0):
+    def __init__(self, logit_network: torch.nn.Module, value_network: torch.nn.Module, actions: list, obs_dim=None, logit_lr: Optional[float] = 0.001, value_lr: Optional[float] = 0.001, logit_weight_decay: Optional[float] = 0, value_weight_decay: Optional[float] = 0):
         """Instantiate the policy on a network
         
         Args:
@@ -36,18 +36,18 @@ class DiscretePPO(Policy):
         self.action_to_index = {a: i for i,a in enumerate(actions)}
         self.index_to_action = {i: a for i,a in enumerate(actions)}
 
-        dummy_obs = torch.zeros(obs_dim)
-        if self.logit_network(dummy_obs).shape[1] != len(self.actions):
-            raise ValueError("Network, state, and action shapes do not align")
+        # dummy_obs = torch.zeros(obs_dim)
+        # if self.logit_network(dummy_obs).shape[1] != len(self.actions):
+        #     raise ValueError("Network, state, and action shapes do not align")
         
         self.logit_optimizer = torch.optim.Adam(self.logit_network.parameters(),lr=logit_lr,weight_decay=logit_weight_decay)
         self.value_optimizer = torch.optim.Adam(self.value_network.parameters(),lr=value_lr,weight_decay=value_weight_decay)
  
 
 
-    def choose_action(self, env: gym.Env, obs):
+    def choose_action(self, env: gym.Env, obs: torch.tensor):
         """Return an action and a log probability based on the state"""
-        logits = self.logit_network(obs)
+        logits = self.logit_network(obs.unsqueeze(0))
         dist = torch.distributions.Categorical(logits=logits)
 
         a = dist.sample()
@@ -121,13 +121,13 @@ class DiscretePPO(Policy):
 
                     G = r + gamma*G
 
-                    logits = self.logit_network(obs)
+                    logits = self.logit_network(obs.unsqueeze(0))
                     dist = torch.distributions.Categorical(logits=logits)
-                    log_prob = dist.log_prob(torch.tensor([a],dtype=int))
+                    log_prob = dist.log_prob(torch.tensor(a,dtype=int))
 
-                    value = self.value_network(obs)
+                    value = self.value_network(obs.unsqueeze(0))
 
-                    new_transition = (obs,a,G,log_prob.squeeze(),value.squeeze())
+                    new_transition = (obs.squeeze(),a,G,log_prob.squeeze(),value.squeeze())
                     T_batch.append(new_transition)
 
                 training_returns.append(G)
