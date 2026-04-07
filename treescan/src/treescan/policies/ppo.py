@@ -117,7 +117,7 @@ class DiscretePPO(Policy):
 
             seed = start_seed
 
-        start_epoch = resume_epoch if resume_epoch is not None else 0
+        start_epoch = resume_epoch+1 if resume_epoch is not None else 0
         epoch = start_epoch
 
         try:
@@ -286,7 +286,8 @@ class DiscretePPO(Policy):
             "value_optimizer": self.value_optimizer.state_dict(),
             "training_returns": training_returns,
             "training_lengths": training_lengths,
-            "losses": losses
+            "losses": losses,
+            "rng_state": torch.get_rng_state()
         }
 
         torch.save(checkpoint, f"{path}/ckpt_{epoch}.pt")
@@ -301,5 +302,8 @@ class DiscretePPO(Policy):
         self.value_network.load_state_dict(checkpoint["value_network"])
         self.logit_optimizer.load_state_dict(checkpoint["logit_optimizer"])
         self.value_optimizer.load_state_dict(checkpoint["value_optimizer"])
+
+        if "rng_state" in checkpoint.keys():
+            torch.set_rng_state(checkpoint["rng_state"])
 
         return checkpoint["epoch"], checkpoint["seed"], checkpoint["training_returns"], checkpoint["training_lengths"], checkpoint["losses"]
