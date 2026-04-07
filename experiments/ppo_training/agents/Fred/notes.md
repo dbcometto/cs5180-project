@@ -1,8 +1,9 @@
 # Fred Training Notes
 
 
-
-
+7 Apr 2026:
+3690.6s to checkpoint 728
+502.9s to 743
 
 Info:
 
