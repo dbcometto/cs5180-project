@@ -195,17 +195,7 @@ class DiscretePPO(Policy):
                             losses
                         )
 
-            info = {
-                "training_lengths": training_lengths,
-                "training_returns": training_returns,
-                "training_losses": losses,
-                "epochs": epochs,
-                "batch_size": batch_size,
-                "optimizer_epochs": optimizer_epochs,
-                "clip_epsilon": clip_epsilon,
-                "gamma": gamma,
-                "start_seed": start_seed
-            }
+            
 
             if folderpath is not None:
                 self.save_checkpoint(
@@ -220,17 +210,18 @@ class DiscretePPO(Policy):
 
         except KeyboardInterrupt:
             if folderpath is not None:
-                self.save_checkpoint(
-                                folderpath,
-                                epoch,
-                                seed,
-                                training_returns,
-                                training_lengths,
-                                losses
-                            )
                 print(f"Interrupted at epoch {epoch} and saved checkpoint to file at {folderpath}")
+            else:
+                print(f"Interrupted at epoch {epoch} and not saved (no filepath provided)")
         
         except Exception as e:
+            if folderpath is not None:
+                print(f"Exception at epoch {epoch} and saved checkpoint to file at {folderpath} | Exception: {e}")
+            else:
+                print(f"Exception at epoch {epoch} and not saved (no filepath provided)  | Exception: {e}")
+            raise e
+
+        finally:
             if folderpath is not None:
                 self.save_checkpoint(
                                 folderpath,
@@ -240,10 +231,21 @@ class DiscretePPO(Policy):
                                 training_lengths,
                                 losses
                             )
-                print(f"Exception at epoch {epoch} and saved checkpoint to file at {folderpath} | Exception: {e}")
-            raise e
+                
+            info = {
+                "training_lengths": training_lengths,
+                "training_returns": training_returns,
+                "training_losses": losses,
+                "epochs": epochs,
+                "batch_size": batch_size,
+                "optimizer_epochs": optimizer_epochs,
+                "clip_epsilon": clip_epsilon,
+                "gamma": gamma,
+                "start_seed": start_seed,
+                "epoch_completed": epoch
+            }
 
-        return info
+            return info
     
     def save(self,folderpath):
         """Save the policy to a file"""
