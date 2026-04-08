@@ -431,7 +431,7 @@ class TreeWorld(gym.Env):
         reward = 0 # updated at each phase
 
         # Phase 1: Move
-        proposed_location = np.clip(self._agent_location + self._action_to_position_change[action],[0,0],[self._map_rows,self._map_cols],dtype=int)
+        proposed_location = np.clip(self._agent_location + self._action_to_position_change[action],[0,0],[self._map_rows-1,self._map_cols-1],dtype=int)
 
         if self._hidden_map[tuple(proposed_location)] == self.TILES.CLEAR:
             self._agent_location = proposed_location
