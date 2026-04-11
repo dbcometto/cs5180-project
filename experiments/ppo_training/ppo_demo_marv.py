@@ -23,7 +23,7 @@ friend = Agent.load(friend_folderpath)
 
 
 
-demo_env = TreeWorld(render_mode="human",step_limit=999, obs_as_tensor=True, use_fixed_map=False, enable_extra_channels=False)
+demo_env = TreeWorld(render_mode="human",step_limit=999, obs_as_tensor=True, use_fixed_map=False, enable_extra_channels=True)
 
 
 # bob.generate_trajectory(demo_env,seed=2029)
