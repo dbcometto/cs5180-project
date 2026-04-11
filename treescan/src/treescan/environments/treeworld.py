@@ -25,6 +25,7 @@ class TreeWorld(gym.Env):
     ONLY2D_COLOR = "#FFFCDF"
     OCCUPIED_COLOR = "#8D6000"
     SCANNED_COLOR = "#FFC918"
+    START_COLOR = "#10C7FF"
 
     # Env Params
     RANGE_2D = 4
@@ -51,12 +52,14 @@ class TreeWorld(gym.Env):
                  step_limit = 99, window_width = 1024, window_height = 512,
                  render_mode = None, 
                  use_fixed_map = True, 
-                 flatten_obs = False, one_hot_obs = False, obs_as_tensor = True):
+                 flatten_obs = False, one_hot_obs = False, 
+                 obs_as_tensor = True, enable_extra_channels = False):
         """Create the tree world"""
 
         self.do_flatten_obs = flatten_obs
         self.do_one_hot = one_hot_obs
         self.obs_as_tensor = obs_as_tensor
+        self.enable_extra_channels = enable_extra_channels
 
         self._step_limit = step_limit
         self._current_step = -1
@@ -91,7 +94,10 @@ class TreeWorld(gym.Env):
         
 
         # Define Gym Spaces
-        self.observation_space = gym.spaces.Box(0,1,shape=(11,map_rows,map_cols))
+        if not enable_extra_channels:
+            self.observation_space = gym.spaces.Box(0,1,shape=(11,map_rows,map_cols))
+        else:
+            self.observation_space = gym.spaces.Box(0,1,shape=(13,map_rows,map_cols))
         self.action_space = gym.spaces.Discrete(7)
 
         # Define Movement Array
@@ -188,7 +194,8 @@ class TreeWorld(gym.Env):
     def _get_obs(self):
         """Return an observaton"""
 
-        obs = np.stack([
+        if self.enable_extra_channels:
+            obs = np.stack([
             self._map_agent_location,
             self._map_start_location,
             self._map_2dknown,
@@ -200,7 +207,25 @@ class TreeWorld(gym.Env):
             self._map_scanned_right,
             self._map_scanned_up,
             self._map_scanned_down,
+            self._scalar_trees_remaining,
+            self._scalar_trees_completed,
+            self._scalar_trees_all_complete
         ], axis=0)
+            
+        else:
+            obs = np.stack([
+                self._map_agent_location,
+                self._map_start_location,
+                self._map_2dknown,
+                self._map_3dknown,
+                self._map_occupied,
+                self._map_rocks,
+                self._map_trees,
+                self._map_scanned_left,
+                self._map_scanned_right,
+                self._map_scanned_up,
+                self._map_scanned_down,
+            ], axis=0)
 
         if self.obs_as_tensor:
             obs = torch.tensor(obs,dtype=torch.float32)
@@ -245,10 +270,17 @@ class TreeWorld(gym.Env):
         self._map_occupied = np.zeros((self._map_rows,self._map_cols), dtype=int)           # 0 where free, 1 where occupied
         self._map_rocks = np.zeros((self._map_rows,self._map_cols), dtype=int)              # 1 where known rock, 0 elsewhere
         self._map_trees = np.zeros((self._map_rows,self._map_cols), dtype=int)              # 1 where known tree, 0 elsewhere
-        self._map_scanned_left = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 where tree is scanned, 0 elsewhere
+        self._map_scanned_left = np.zeros((self._map_rows,self._map_cols), dtype=int)       # 1 where tree is scanned, 0 elsewhere
         self._map_scanned_right = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 where tree is scanned, 0 elsewhere
-        self._map_scanned_up = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 where tree is scanned, 0 elsewhere
-        self._map_scanned_down = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 where tree is scanned, 0 elsewhere
+        self._map_scanned_up = np.zeros((self._map_rows,self._map_cols), dtype=int)         # 1 where tree is scanned, 0 elsewhere
+        self._map_scanned_down = np.zeros((self._map_rows,self._map_cols), dtype=int)       # 1 where tree is scanned, 0 elsewhere
+
+        if self.enable_extra_channels:
+            self._scalar_trees_remaining = np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent remaining
+            self._scalar_trees_completed = np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent completed
+            self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=float) # 1 if all trees are scanned else 0
+
+
 
         self._map_start_location = np.zeros((self._map_rows,self._map_cols), dtype=int)     # all zeros except for a 1 at agent start location
         try:
@@ -381,6 +413,18 @@ class TreeWorld(gym.Env):
 
         return visible
     
+
+    def _update_scalars_tree_complete(self):
+        """Calculate the trees remaining to be scanned"""
+        percent_complete = self._calc_percent_complete()
+        self._scalar_trees_remaining = (1-percent_complete)*np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent remaining
+        self._scalar_trees_completed = percent_complete*np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent completed
+
+        if percent_complete >= self.COMPLETE_PERCENT:
+            self._scalar_trees_all_complete = np.ones((self._map_rows,self._map_cols), dtype=float) # 1 if all trees are scanned else 0
+        else:
+            self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=float)
+
     
 
 
@@ -449,6 +493,8 @@ class TreeWorld(gym.Env):
             new3dtiles, newfaces = self._update_map_3dscan()
             reward += self.REWARD_SCAN + self.REWARD_NEW_3D*new3dtiles + self.REWARD_NEW_FACE*newfaces # Reward for 3D exploration and scanning tree faces
         
+        if self.enable_extra_channels:
+            self._update_scalars_tree_complete()
 
         # Phase 3: Terminate
         terminated = True if action == self.ACTIONS.END else False
@@ -597,6 +643,7 @@ class TreeWorld(gym.Env):
         # Draw Tiles
         for r in range(self._map_rows):
             for c in range(self._map_cols):
+
                 
                 if self._map_2dknown[r,c] == 0:
                     pygame.draw.rect(
@@ -696,6 +743,16 @@ class TreeWorld(gym.Env):
                                     (self.pix_square_size, self.pix_square_size),
                                 ),
                             )
+
+                if self._map_start_location[r,c] == 1:
+                    pygame.draw.rect(
+                        canvas,
+                        self.START_COLOR,
+                        pygame.Rect(
+                            np.array([self.info_width_start + 0.33*self.pix_square_size,0+0.33*self.pix_square_size]) + self.pix_square_size * np.array([c,r]),
+                            (0.33*self.pix_square_size, 0.33*self.pix_square_size),
+                        ),
+                    )
 
                 # if tile == self.TILES.TREE:
                 #     pygame.draw.rect(

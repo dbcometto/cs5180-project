@@ -13,7 +13,7 @@ import torch
 from collections import OrderedDict
 
 
-friend_name = "Fred"
+friend_name = "Marv"
 seed=2027
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
@@ -23,11 +23,11 @@ friend = Agent.load(friend_folderpath)
 
 
 
-demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=False)
+demo_env = TreeWorld(render_mode="human",step_limit=999, obs_as_tensor=True, use_fixed_map=False, enable_extra_channels=False)
 
 
 # bob.generate_trajectory(demo_env,seed=2029)
 torch.manual_seed(seed)
 friend.generate_trajectory(demo_env,seed=seed)
 print("Finished")
-demo_env.hold_frame()
+demo_env.hold_frame(duration=20000)

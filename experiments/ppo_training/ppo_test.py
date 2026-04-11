@@ -14,13 +14,13 @@ from treescan.environments import TreeWorld
 import time
 start = time.time()
 
-friend_name = "Fred"
+friend_name = "Marv"
 test_name = "test0"
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
-# friend = Agent.load(friend_folderpath)
-friend = Agent.load_from_checkpoint(friend_folderpath, 10727)
+friend = Agent.load(friend_folderpath)
+# friend = Agent.load_from_checkpoint(friend_folderpath, 10727)
 
 
 test_env = TreeWorld(render_mode=None,step_limit=999,obs_as_tensor=True, use_fixed_map=False)
