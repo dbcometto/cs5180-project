@@ -14,10 +14,6 @@ from treescan.utils import generate_trajectory
 
 
 
-# TODO: GAE
-# TODO: clean up
-# TODO: enable obs dict use
-
 class DiscretePPOGAE(Policy):
     """A network policy using the PPO algorithm"""
 
@@ -66,15 +62,12 @@ class DiscretePPOGAE(Policy):
 
     def logit_loss_fn(self, advantage, old_log_probs, new_log_probs, epsilon, entropy):
         """Calculate loss for logit network"""
-        if advantage.numel() > 1 and self.do_normalize_advantage:
-            advantage = (advantage - torch.mean(advantage))/(torch.std(advantage) + 1e-8)
-
         ratio = torch.exp(new_log_probs-old_log_probs)
         g_val = torch.clip(ratio,1-epsilon,1+epsilon)
 
-        loss = -torch.min(ratio*advantage, g_val*advantage) - self.entropy_bonus*entropy
+        loss = -torch.min(ratio*advantage, g_val*advantage) 
             
-        return torch.mean(loss)
+        return torch.mean(loss) - self.entropy_bonus*entropy
     
 
 
@@ -140,29 +133,28 @@ class DiscretePPOGAE(Policy):
 
                     # Calculate values
                     G = 0
-                    gae = 0
+                    a_gae = 0
                     for j,transition in enumerate(reversed(T)):
                         obs,a,next_obs,r,term,trunc,_ = transition
-                        done = term or trunc
 
                         # Grab data
                         a = self.action_to_index[a]
-                        with torch.no_grad(): # And squeezing to get rid of batch dimension
+                        with torch.no_grad(): 
                             logits = self.logit_network(obs)
                             dist = torch.distributions.Categorical(logits=logits)
                             log_prob = dist.log_prob(torch.tensor(a,dtype=torch.int64))
 
-                            value = self.value_network(obs).squeeze(-1)
-                            next_value = self.value_network(next_obs).squeeze(-1) if not done else torch.zeros_like(value)
+                            value = self.value_network(obs).squeeze(-1) # Squeezing to get rid of batch dimension after network
+                            next_value = self.value_network(next_obs).squeeze(-1) if not term else torch.zeros_like(value)
 
                         # Calculations
-                        G = r + gamma*G
-                        delta = r + gamma*next_value-value
-                        gae = delta + gamma * lambda_gae * gae
-                        G_gae = gae + value
+                        G = r + gamma*G*(1-term)
+                        delta = r + gamma*next_value*(1-term) - value
+                        a_gae = delta + gamma * lambda_gae * a_gae*(1-term)
+                        G_gae = a_gae + value
 
                         # Save transition
-                        new_transition = (obs,a,G_gae,log_prob,value,gae)
+                        new_transition = (obs,a,G_gae,log_prob,value,a_gae)
                         T_batch.append(new_transition)
 
                     # Save Info
@@ -174,10 +166,13 @@ class DiscretePPOGAE(Policy):
 
                 obs_batch = torch.stack([t[0] for t in T_batch],dim=0).detach()
                 a_batch = torch.tensor([t[1] for t in T_batch],dtype=torch.int64).detach()
-                G_batch = torch.tensor([t[2] for t in T_batch], dtype=torch.float).unsqueeze(1).detach()
+                G_batch = torch.tensor([t[2] for t in T_batch], dtype=torch.float).detach()
                 old_log_prob_batch = torch.stack([t[3] for t in T_batch],dim=0).detach()
                 value_batch = torch.stack([t[4] for t in T_batch],dim=0).detach()
                 adv_batch = torch.stack([t[5] for t in T_batch],dim=0).detach()
+
+                if adv_batch.shape[0] > 1 and self.do_normalize_advantage:
+                    adv_batch = (adv_batch - torch.mean(adv_batch))/(torch.std(adv_batch) + 1e-8)
 
 
 
@@ -190,7 +185,7 @@ class DiscretePPOGAE(Policy):
                     dist = torch.distributions.Categorical(logits=new_logits)
                     new_log_prob_batch = dist.log_prob(a_batch)
 
-                    new_value_batch = self.value_network(obs_batch)
+                    new_value_batch = self.value_network(obs_batch).squeeze(-1) # make it [batch,] or scalar per batch
 
                     # Optimizer steps
                     self.logit_optimizer.zero_grad()
@@ -247,7 +242,7 @@ class DiscretePPOGAE(Policy):
                 print(f"Exception at epoch {epoch} and saved checkpoint to file at {folderpath} | Exception: {e}")
             else:
                 print(f"Exception at epoch {epoch} and not saved (no filepath provided)  | Exception: {e}")
-            raise e
+            raise
 
         finally:
             if folderpath is not None:
@@ -331,7 +326,7 @@ class DiscretePPOGAE(Policy):
             "logit_optimizer": self.logit_optimizer.state_dict(),
             "value_optimizer": self.value_optimizer.state_dict(),
             "training_returns": training_returns,
-            "mc_returns": training_mcreturns,
+            "training_mcreturns": training_mcreturns,
             "training_lengths": training_lengths,
             "losses": losses,
             "rng_state": torch.get_rng_state()

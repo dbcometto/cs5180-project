@@ -46,6 +46,7 @@ class TreeWorld(gym.Env):
     FAIL_PERCENT = 0.5
     COMPLETE_PERCENT = 0.99
     END_DIST_THRESHOLD = 2
+    REWARD_MAX_EARLY_END = -10
 
     def __init__(self, 
                  map_rows = 10, map_cols = 15, 
@@ -53,7 +54,10 @@ class TreeWorld(gym.Env):
                  render_mode = None, 
                  use_fixed_map = True, 
                  flatten_obs = False, one_hot_obs = False, 
-                 obs_as_tensor = True, enable_extra_channels = False):
+                 obs_as_tensor = True, enable_extra_channels = False,
+                 discourage_early_end = False, first_end_step = 20,
+                 do_smooth_end_dist = False, 
+                 do_smooth_complete_reward = False, smooth_complete_version = "linear"):
         """Create the tree world"""
 
         self.do_flatten_obs = flatten_obs
@@ -61,6 +65,12 @@ class TreeWorld(gym.Env):
         self.obs_as_tensor = obs_as_tensor
         self.enable_extra_channels = enable_extra_channels
 
+        self.discourage_early_end = discourage_early_end
+        self.first_end_step = first_end_step
+        self.do_smooth_end_dist = do_smooth_end_dist
+        self.do_smooth_complete_reward = do_smooth_complete_reward
+        self.smooth_complete_version = smooth_complete_version
+        
         self._step_limit = step_limit
         self._current_step = -1
 
@@ -497,21 +507,40 @@ class TreeWorld(gym.Env):
             self._update_scalars_tree_complete()
 
         # Phase 3: Terminate
-        terminated = True if action == self.ACTIONS.END else False
+        percent_complete = self._calc_percent_complete()
+
+        terminated = False
+        if action == self.ACTIONS.END:
+            terminated = True
+            if self.discourage_early_end and self._current_step <= self.first_end_step:
+                    reward += self.REWARD_MAX_EARLY_END*(1-percent_complete)
+                
+
         truncated = True if self._current_step >= self._step_limit else False
 
         if terminated or truncated:
-            percent = self._calc_percent_complete()
+            
+            if self.do_smooth_complete_reward: # Smooth reward
+                if self.smooth_complete_version == "linear":
+                    reward += (self.REWARD_COMPLETE)*percent_complete + (self.REWARD_FAIL)*(1-percent_complete)
+                elif self.smooth_complete_version == "doublequad":
+                    reward += (self.REWARD_COMPLETE)*percent_complete**2 + (self.REWARD_FAIL)*(1-percent_complete)**2
+                else:
+                    reward += (self.REWARD_COMPLETE-self.REWARD_FAIL)*percent_complete**2 + self.REWARD_FAIL
+            else:
+                if percent_complete < self.FAIL_PERCENT: # Piecewise reward with thresholds
+                    reward += self.REWARD_FAIL
+                elif percent_complete < self.COMPLETE_PERCENT:
+                    reward += self.REWARD_PERCENT_MAX*((percent_complete-self.FAIL_PERCENT)/(self.COMPLETE_PERCENT-self.FAIL_PERCENT))**4  # Gives more reward as closer to percent complete, *0 at fail and *1 at complete
+                elif percent_complete >= self.COMPLETE_PERCENT:
+                    reward += self.REWARD_COMPLETE
 
-            if percent < self.FAIL_PERCENT: # Piecewise reward for completion
-                reward += self.REWARD_FAIL
-            elif percent < self.COMPLETE_PERCENT:
-                reward += self.REWARD_PERCENT_MAX*((percent-self.FAIL_PERCENT)/(self.COMPLETE_PERCENT-self.FAIL_PERCENT))**4  # Gives more reward as closer to percent complete, *0 at fail and *1 at complete
-            elif percent >= self.COMPLETE_PERCENT:
-                reward += self.REWARD_COMPLETE
-
-            if np.linalg.norm(self._agent_location-self._agent_start_location) > self.END_DIST_THRESHOLD: # If too far at end, give penalty
-                reward += self.REWARD_FAR_END
+            dist = np.linalg.norm(self._agent_location-self._agent_start_location)
+            if self.do_smooth_end_dist:
+                reward += self.REWARD_FAR_END * (max(0,dist-self.END_DIST_THRESHOLD))**2 # If too far at end, give penalty
+            else:
+                reward += self.REWARD_FAR_END if dist > self.END_DIST_THRESHOLD else 0
+                
 
 
         observation = self._get_obs()

@@ -1,3 +1,3 @@
 """Networks for the gridworld environment"""
 
-from .tree_networks import SimpleConvNetwork, BetterConvNetwork
+from .tree_networks import SimpleConvNetwork, BetterConvNetwork, BetterConvNetwork2
