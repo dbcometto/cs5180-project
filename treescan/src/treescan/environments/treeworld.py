@@ -97,7 +97,7 @@ class TreeWorld(gym.Env):
         if not enable_extra_channels:
             self.observation_space = gym.spaces.Box(0,1,shape=(11,map_rows,map_cols))
         else:
-            self.observation_space = gym.spaces.Box(0,1,shape=(13,map_rows,map_cols))
+            self.observation_space = gym.spaces.Box(0,1,shape=(14,map_rows,map_cols))
         self.action_space = gym.spaces.Discrete(7)
 
         # Define Movement Array
