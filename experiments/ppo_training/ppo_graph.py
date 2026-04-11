@@ -12,7 +12,7 @@ from treescan.policies import DiscreteReinforce
 
 from treescan.environments import TreeWorld
 
-friend_name = "Fred"
+friend_name = "Marv"
 test_name = "test0"
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
