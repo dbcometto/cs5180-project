@@ -15,13 +15,13 @@ import time
 start = time.time()
 
 friend_name = "MarvJr"
-test_name = "test26"
+test_name = "test760"
 gamma = 0.99
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 # friend = Agent.load(friend_folderpath)
-friend = Agent.load_from_checkpoint(friend_folderpath, 26)
+friend = Agent.load_from_checkpoint(friend_folderpath, 760)
 
 
 test_env = TreeWorld(render_mode=None,step_limit=999,obs_as_tensor=True, use_fixed_map=False, enable_extra_channels=True, do_smooth_complete_reward=True, do_smooth_end_dist=True)

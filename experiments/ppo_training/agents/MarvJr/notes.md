@@ -2,22 +2,23 @@
 
 PPO GAE
 
-637.9s
+637.9s to 26
+21483.1s to 760
 
 
-
-## New Setup
+## Setup
 
 # PPO
 epsilon = 0.2
-beta = 0.01
-lambda_gae = 0.95
-gamma = 0.99
-alpha_logit = 0.0005
-alpha_value = 0.0005
+beta = 0.02
+lambda_gae = 0.90
+gamma = 0.98
+alpha_logit = 0.001
+alpha_value = 0.001
+do_normalize_advantage = True
 
 # Training
-resume_epoch = 2
+resume_epoch = 28
 checkpoint_interval = 250
 batch_size = 64
 optimizer_epochs = 8
@@ -26,43 +27,8 @@ optimizer_epochs = 8
 step_limit = 499
 use_fixed_map = False
 enable_extra_channels = True
-
-# Overwriting Rewards
-NEW_FAIL_REWARD = -50
-NEW_SUCCESS_REWARD = 50
-
-
-
-
-
-
-
-
-
-
-
-
-## Original Setup
-
-### PPO
-epsilon = 0.2
-beta = 0.01
-lambda_gae = 0.95
-gamma = 0.99
-alpha_logit = 0.0005
-alpha_value = 0.0005
-
-### Training
-resume_epoch = 2
-checkpoint_interval = 250
-batch_size = 64
-optimizer_epochs = 8
-
-### World
-step_limit = 999
-use_fixed_map = False
-enable_extra_channels = True
-
+do_smooth_complete_reward = True
+do_smooth_end_dist = True
 
 ### Networks
 logit_network = BetterConvNetwork(input_channels=obs_channels, output_width=action_dim, 

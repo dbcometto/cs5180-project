@@ -154,7 +154,12 @@ class DiscretePPOGAE(Policy):
                         G_gae = a_gae + value
 
                         # Save transition
-                        new_transition = (obs,a,G_gae,log_prob,value,a_gae)
+                        new_transition = (obs.detach(),
+                                          a,
+                                          G_gae.detach(),
+                                          log_prob.detach(),
+                                          value.detach(),
+                                          a_gae.detach())
                         T_batch.append(new_transition)
 
                     # Save Info
@@ -164,20 +169,25 @@ class DiscretePPOGAE(Policy):
                     if start_seed is not None:
                         seed += 1
 
+                T.clear()
+
+                # Create Tensors
                 obs_batch = torch.stack([t[0] for t in T_batch],dim=0).detach()
                 a_batch = torch.tensor([t[1] for t in T_batch],dtype=torch.int64).detach()
                 G_batch = torch.tensor([t[2] for t in T_batch], dtype=torch.float).detach()
                 old_log_prob_batch = torch.stack([t[3] for t in T_batch],dim=0).detach()
-                value_batch = torch.stack([t[4] for t in T_batch],dim=0).detach()
+                # value_batch = torch.stack([t[4] for t in T_batch],dim=0).detach()
                 adv_batch = torch.stack([t[5] for t in T_batch],dim=0).detach()
 
+                T_batch.clear()
+
+
+                # Normalize
                 if adv_batch.shape[0] > 1 and self.do_normalize_advantage:
                     adv_batch = (adv_batch - torch.mean(adv_batch))/(torch.std(adv_batch) + 1e-8)
 
 
-
-
-                # Optimize network
+                # Optimize networks
                 for optim_step in tqdm(range(optimizer_epochs),desc="Optimizer Step",leave=False,position=2): 
 
                     # New values
@@ -197,6 +207,7 @@ class DiscretePPOGAE(Policy):
                     value_loss = self.value_loss_fn(G_batch,new_value_batch)
                     value_loss.backward()
                     self.value_optimizer.step()
+
 
                 # append final loss
                 losses.append([logit_loss.item(),value_loss.item()])
