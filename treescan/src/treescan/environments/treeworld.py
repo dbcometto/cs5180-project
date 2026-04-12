@@ -49,6 +49,7 @@ class TreeWorld(gym.Env):
     # Thresholds
     END_DIST_THRESHOLD = 2
     EXPLORE_END_THRESHOLD = 0.7
+    REWARD_TREE_COMPLETE = 3.0  # bonus per tree fully scanned (all 4 faces)
     FAIL_PERCENT = 0.5
     COMPLETE_PERCENT = 0.99
 
@@ -62,7 +63,8 @@ class TreeWorld(gym.Env):
                  discourage_early_end = False, first_end_step = 20,
                  do_smooth_end_dist = False, 
                  do_smooth_complete_reward = False, smooth_complete_version = "linear",
-                 do_gate_ending = False):
+                 do_gate_ending = False,
+                 do_reward_tree_complete = False):
         """Create the tree world"""
 
         self.do_flatten_obs = flatten_obs
@@ -76,6 +78,7 @@ class TreeWorld(gym.Env):
         self.do_smooth_complete_reward = do_smooth_complete_reward
         self.smooth_complete_version = smooth_complete_version
         self.do_gate_ending = do_gate_ending
+        self.do_reward_tree_complete = do_reward_tree_complete
         
         self._step_limit = step_limit
         self._current_step = -1
@@ -506,8 +509,13 @@ class TreeWorld(gym.Env):
         reward += self.REWARD_EXPLORE_TILE*newtiles # Reward for exploring new tiles
 
         if action == self.ACTIONS.SCAN:
+            # count fully-scanned trees before the scan so we can reward new completions
+            treesDoneBefore = self._count_fully_scanned_trees() if self.do_reward_tree_complete else 0
             new3dtiles, newfaces = self._update_map_3dscan()
             reward += self.REWARD_SCAN + self.REWARD_NEW_3D*new3dtiles + self.REWARD_NEW_FACE*newfaces # Reward for 3D exploration and scanning tree faces
+            if self.do_reward_tree_complete:
+                treesDoneAfter = self._count_fully_scanned_trees()
+                reward += self.REWARD_TREE_COMPLETE * (treesDoneAfter - treesDoneBefore)
         
         if self.enable_extra_channels:
             self._update_scalars_tree_complete()
@@ -589,6 +597,19 @@ class TreeWorld(gym.Env):
 
         return num_scanned/num_tiles
 
+
+    def _count_fully_scanned_trees(self):
+        """Count trees where all 4 faces have been scanned"""
+        count = 0
+        for row in range(self._map_rows):
+            for col in range(self._map_cols):
+                if self._hidden_map[row,col] == self.TILES.TREE:
+                    if (self._map_scanned_left[row,col] == 1 and
+                        self._map_scanned_right[row,col] == 1 and
+                        self._map_scanned_up[row,col] == 1 and
+                        self._map_scanned_down[row,col] == 1):
+                        count += 1
+        return count
 
 
 
