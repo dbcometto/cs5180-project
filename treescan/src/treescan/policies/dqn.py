@@ -129,56 +129,95 @@ class DiscreteDQN(Policy):
         self.targetNetwork.load_state_dict(self.qNetwork.state_dict())
 
     def train(self, env, totalSteps=100000, startTrainingStep=1000,
-              updateFreq=4, startSeed=None):
+              updateFreq=4, startSeed=None,
+              folderpath=None, checkpointInterval=10000, resumeStep=None):
 
         replayBuffer = ReplayBuffer(self.bufferSize)
 
-        trainingReturns = []
-        trainingLengths = []
-        trainingLosses = []
-        currentRewards = []
+        # resume from checkpoint or start fresh
+        if resumeStep is not None and folderpath is not None:
+            try:
+                resumeStep, seed, trainingReturns, trainingLengths, trainingLosses = self.load_checkpoint(folderpath, resumeStep)
+                print(f"Resuming from step {resumeStep}")
+            except Exception as e:
+                raise RuntimeError(f"Failed to resume from checkpoint at step {resumeStep}") from e
+        else:
+            trainingReturns = []
+            trainingLengths = []
+            trainingLosses = []
+            seed = startSeed
 
-        seed = startSeed
+        currentRewards = []
+        startStep = resumeStep + 1 if resumeStep is not None else 0
+        step = startStep
+
         obs, _ = env.reset(seed=seed)
         if startSeed is not None:
             seed += 1
 
-        for step in tqdm(range(totalSteps), desc="DQN", leave=False):
+        try:
+            for step in tqdm(range(startStep, totalSteps), desc="DQN", leave=False):
 
-            self.epsilon = self._computeEpsilon(step)
+                self.epsilon = self._computeEpsilon(step)
 
-            # take an action and observe the result
-            action = self.choose_action(env, obs)
-            nextObs, reward, terminated, truncated, _ = env.step(action)
-            done = terminated or truncated
+                # take an action and observe the result
+                action = self.choose_action(env, obs)
+                nextObs, reward, terminated, truncated, _ = env.step(action)
+                done = terminated or truncated
 
-            replayBuffer.add(obs, self.actionToIndex[action], reward, nextObs, float(done))
-            currentRewards.append(reward)
+                replayBuffer.add(obs, self.actionToIndex[action], reward, nextObs, float(done))
+                currentRewards.append(reward)
 
-            if done:
-                # compute discounted return for this episode
-                episodeReturn = 0
-                for r in reversed(currentRewards):
-                    episodeReturn = r + self.gamma * episodeReturn
-                trainingReturns.append(episodeReturn)
-                trainingLengths.append(len(currentRewards))
+                if done:
+                    # compute discounted return for this episode
+                    episodeReturn = 0
+                    for r in reversed(currentRewards):
+                        episodeReturn = r + self.gamma * episodeReturn
+                    trainingReturns.append(episodeReturn)
+                    trainingLengths.append(len(currentRewards))
 
-                currentRewards = []
-                obs, _ = env.reset(seed=seed)
-                if startSeed is not None:
-                    seed += 1
+                    currentRewards = []
+                    obs, _ = env.reset(seed=seed)
+                    if startSeed is not None:
+                        seed += 1
+                else:
+                    obs = nextObs
+
+                # wait until we have enough experience before training
+                if step >= startTrainingStep and len(replayBuffer) >= self.batchSize:
+
+                    if step % updateFreq == 0:
+                        loss = self._updateBehaviorNetwork(replayBuffer)
+                        trainingLosses.append(loss)
+
+                    if step % self.targetUpdateFreq == 0:
+                        self._updateTargetNetwork()
+
+                # save checkpoint at intervals
+                if folderpath is not None:
+                    if step % checkpointInterval == 0:
+                        self.save_checkpoint(folderpath, step, seed, trainingReturns, trainingLengths, trainingLosses)
+
+            if folderpath is not None:
+                self.save_checkpoint(folderpath, step, seed, trainingReturns, trainingLengths, trainingLosses)
+                print(f"Finished training and saved checkpoint at step {step} to file at {folderpath}")
+
+        except KeyboardInterrupt:
+            if folderpath is not None:
+                print(f"Interrupted at step {step} and saved checkpoint to file at {folderpath}")
             else:
-                obs = nextObs
+                print(f"Interrupted at step {step} and not saved (no filepath provided)")
 
-            # wait until we have enough experience before training
-            if step >= startTrainingStep and len(replayBuffer) >= self.batchSize:
+        except Exception as e:
+            if folderpath is not None:
+                print(f"Exception at step {step} and saved checkpoint to file at {folderpath} | Exception: {e}")
+            else:
+                print(f"Exception at step {step} and not saved (no filepath provided) | Exception: {e}")
+            raise e
 
-                if step % updateFreq == 0:
-                    loss = self._updateBehaviorNetwork(replayBuffer)
-                    trainingLosses.append(loss)
-
-                if step % self.targetUpdateFreq == 0:
-                    self._updateTargetNetwork()
+        finally:
+            if folderpath is not None:
+                self.save_checkpoint(folderpath, step, seed, trainingReturns, trainingLengths, trainingLosses)
 
         return {
             "training_returns": trainingReturns,
@@ -187,6 +226,7 @@ class DiscreteDQN(Policy):
             "total_steps": totalSteps,
             "gamma": self.gamma,
             "start_seed": startSeed,
+            "step_completed": step,
         }
 
     def save(self, folderpath):
@@ -198,3 +238,44 @@ class DiscreteDQN(Policy):
     def load(cls, folderpath):
         with open(f"{folderpath}/policy.pkl", "rb") as file:
             return pickle.load(file)
+
+    @classmethod
+    def load_from_checkpoint(cls, folderpath, checkpointStep):
+        """Load the policy from a checkpoint file"""
+        with open(f"{folderpath}/policy.pkl", "rb") as file:
+            policy = pickle.load(file)
+        policy.load_checkpoint(folderpath, checkpointStep)
+        return policy
+
+    def save_checkpoint(self, folderpath, step, seed, trainingReturns, trainingLengths, trainingLosses):
+        """Save a training checkpoint to a file"""
+        path = f"{folderpath}/checkpoints"
+        os.makedirs(path, exist_ok=True)
+
+        checkpoint = {
+            "step": step,
+            "seed": seed,
+            "qNetwork": self.qNetwork.state_dict(),
+            "targetNetwork": self.targetNetwork.state_dict(),
+            "optimizer": self.optimizer.state_dict(),
+            "trainingReturns": trainingReturns,
+            "trainingLengths": trainingLengths,
+            "trainingLosses": trainingLosses,
+            "rng_state": torch.get_rng_state(),
+        }
+
+        torch.save(checkpoint, f"{path}/ckpt_{step}.pt")
+
+    def load_checkpoint(self, folderpath, step):
+        """Load a training checkpoint from a file"""
+        path = f"{folderpath}/checkpoints/ckpt_{step}.pt"
+        checkpoint = torch.load(path, weights_only=False)
+
+        self.qNetwork.load_state_dict(checkpoint["qNetwork"])
+        self.targetNetwork.load_state_dict(checkpoint["targetNetwork"])
+        self.optimizer.load_state_dict(checkpoint["optimizer"])
+
+        if "rng_state" in checkpoint.keys():
+            torch.set_rng_state(checkpoint["rng_state"])
+
+        return checkpoint["step"], checkpoint["seed"], checkpoint["trainingReturns"], checkpoint["trainingLengths"], checkpoint["trainingLosses"]

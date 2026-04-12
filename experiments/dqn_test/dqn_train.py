@@ -1,21 +1,28 @@
-# trains and saves dqn and ddqn agents on gridworld
+# trains and saves dqn and ddqn agents on treeworld
 
 import time
 
-from treescan.environments import GridWorld
-from treescan.networks.gridworld import SuperSimpleLogitNetwork
+from treescan.environments import TreeWorld
+from treescan.networks.treeworld import SimpleConvNetwork
 from treescan.policies import DiscreteDQN, DiscreteDoubleDQN
 from treescan.agents import Agent
 
 
 agentsFolderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
 
-# removed one_hot_obs — raw 4-dim obs [agent_row, agent_col, goal_row, goal_col] is much easier to learn from
-# trainEnv = GridWorld(render_mode=None, step_limit=999, fixed_goal=True, flatten_obs=True, one_hot_obs=True)
-trainEnv = GridWorld(render_mode=None, step_limit=999, fixed_goal=True, flatten_obs=True)
+trainEnv = TreeWorld(render_mode=None, step_limit=200, obs_as_tensor=True, use_fixed_map=False,
+                     enable_extra_channels=True, do_smooth_complete_reward=True,
+                     discourage_early_end=True, do_reward_tree_complete=True)
+# v7 reward shaping: encourage scanning near trees and completing each tree
+trainEnv.REWARD_STEP = -0.1
+trainEnv.REWARD_SCAN = -0.2         # was -0.7; wasted scans no longer catastrophic
+trainEnv.REWARD_NEW_FACE = 2.5      # was 0.8; new-face scans are clearly worth it
+trainEnv.REWARD_EXPLORE_TILE = 0.3  # was 0.2; push agent to explore toward far trees
+trainEnv.REWARD_TREE_COMPLETE = 3.0 # bonus per tree with all 4 faces scanned
 obs, _ = trainEnv.reset(seed=2025)
 
-obsDim = len(obs)
+obsChannels = obs.shape[0]
+obsDim = obs.shape
 actionList = [a for a in trainEnv.ACTIONS]
 actionDim = len(actionList)
 
@@ -24,29 +31,51 @@ actionDim = len(actionList)
 print("training dqn...")
 start = time.time()
 
-dqnNetwork = SuperSimpleLogitNetwork(input_width=obsDim, hidden_width=64, output_width=actionDim)
+dqnNetwork = SimpleConvNetwork(input_channels=obsChannels, output_width=actionDim)
 dqnPolicy = DiscreteDQN(dqnNetwork, actions=actionList, obs_dim=obsDim,
-                        lr=1e-3, gamma=0.99,
-                        bufferSize=50000, batchSize=32,
+                        lr=3e-4, gamma=0.99,
+                        bufferSize=100000, batchSize=64,
                         epsilonStart=1.0, epsilonEnd=0.01,
-                        epsilonDecaySteps=50000, targetUpdateFreq=1000)
+                        epsilonDecaySteps=250000, targetUpdateFreq=2000)
 dqnAgent = Agent(dqnPolicy)
-dqnAgent.train(trainEnv, totalSteps=200000, startTrainingStep=1000, updateFreq=4, startSeed=2025)
-dqnAgent.save(f"{agentsFolderpath}/dqn")
-print(f"dqn done in {time.time()-start:.1f}s")
+
+dqnFolderpath = f"{agentsFolderpath}/dqn_v7"
+
+try:
+    dqnAgent.train(trainEnv, totalSteps=500000, startTrainingStep=5000, updateFreq=4, startSeed=2025,
+                   folderpath=dqnFolderpath, checkpointInterval=25000)
+except KeyboardInterrupt:
+    print("Interrupting...")
+except Exception as e:
+    print("Exception occurred")
+    raise
+finally:
+    dqnAgent.save(dqnFolderpath)
+    print(f"dqn done in {time.time()-start:.1f}s")
 
 
 # train ddqn
 print("training ddqn...")
 start = time.time()
 
-ddqnNetwork = SuperSimpleLogitNetwork(input_width=obsDim, hidden_width=64, output_width=actionDim)
+ddqnNetwork = SimpleConvNetwork(input_channels=obsChannels, output_width=actionDim)
 ddqnPolicy = DiscreteDoubleDQN(ddqnNetwork, actions=actionList, obs_dim=obsDim,
-                               lr=1e-3, gamma=0.99,
-                               bufferSize=50000, batchSize=32,
+                               lr=3e-4, gamma=0.99,
+                               bufferSize=100000, batchSize=64,
                                epsilonStart=1.0, epsilonEnd=0.01,
-                               epsilonDecaySteps=50000, targetUpdateFreq=1000)
+                               epsilonDecaySteps=250000, targetUpdateFreq=2000)
 ddqnAgent = Agent(ddqnPolicy)
-ddqnAgent.train(trainEnv, totalSteps=200000, startTrainingStep=1000, updateFreq=4, startSeed=2025)
-ddqnAgent.save(f"{agentsFolderpath}/ddqn")
-print(f"ddqn done in {time.time()-start:.1f}s")
+
+ddqnFolderpath = f"{agentsFolderpath}/ddqn_v7"
+
+try:
+    ddqnAgent.train(trainEnv, totalSteps=500000, startTrainingStep=5000, updateFreq=4, startSeed=2025,
+                    folderpath=ddqnFolderpath, checkpointInterval=25000)
+except KeyboardInterrupt:
+    print("Interrupting...")
+except Exception as e:
+    print("Exception occurred")
+    raise
+finally:
+    ddqnAgent.save(ddqnFolderpath)
+    print(f"ddqn done in {time.time()-start:.1f}s")
