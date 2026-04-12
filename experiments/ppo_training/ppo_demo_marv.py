@@ -14,12 +14,12 @@ from collections import OrderedDict
 
 
 friend_name = "MarvJr"
-seed=2028
+seed=2025
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
-# friend = Agent.load(friend_folderpath)
-friend = Agent.load_from_checkpoint(friend_folderpath,26)
+friend = Agent.load(friend_folderpath)
+# friend = Agent.load_from_checkpoint(friend_folderpath,26)
 
 
 

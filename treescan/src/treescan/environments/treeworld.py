@@ -43,10 +43,14 @@ class TreeWorld(gym.Env):
     REWARD_FAR_END = -5
     REWARD_PERCENT_MAX = 10
     REWARD_COMPLETE = 20
+    REWARD_MAX_EARLY_END = -10
+    REWARD_INVALID_END = -0.5
+
+    # Thresholds
+    END_DIST_THRESHOLD = 2
+    EXPLORE_END_THRESHOLD = 0.7
     FAIL_PERCENT = 0.5
     COMPLETE_PERCENT = 0.99
-    END_DIST_THRESHOLD = 2
-    REWARD_MAX_EARLY_END = -10
 
     def __init__(self, 
                  map_rows = 10, map_cols = 15, 
@@ -57,7 +61,8 @@ class TreeWorld(gym.Env):
                  obs_as_tensor = True, enable_extra_channels = False,
                  discourage_early_end = False, first_end_step = 20,
                  do_smooth_end_dist = False, 
-                 do_smooth_complete_reward = False, smooth_complete_version = "linear"):
+                 do_smooth_complete_reward = False, smooth_complete_version = "linear",
+                 do_gate_ending = False):
         """Create the tree world"""
 
         self.do_flatten_obs = flatten_obs
@@ -70,6 +75,7 @@ class TreeWorld(gym.Env):
         self.do_smooth_end_dist = do_smooth_end_dist
         self.do_smooth_complete_reward = do_smooth_complete_reward
         self.smooth_complete_version = smooth_complete_version
+        self.do_gate_ending = do_gate_ending
         
         self._step_limit = step_limit
         self._current_step = -1
@@ -510,10 +516,22 @@ class TreeWorld(gym.Env):
         percent_complete = self._calc_percent_complete()
 
         terminated = False
-        if action == self.ACTIONS.END:
-            terminated = True
-            if self.discourage_early_end and self._current_step <= self.first_end_step:
-                    reward += self.REWARD_MAX_EARLY_END*(1-percent_complete)
+
+        if not self.do_gate_ending: # Standard path
+            if action == self.ACTIONS.END:
+                terminated = True
+                if self.discourage_early_end and self._current_step <= self.first_end_step:
+                        reward += self.REWARD_MAX_EARLY_END*(1-percent_complete)
+
+        if self.do_gate_ending: # Gating ending behind exploration to prevent quitting
+            if action == self.ACTIONS.END:
+                percent_explored = self._calc_percent_explored()
+                if percent_explored >= self.EXPLORE_END_THRESHOLD:
+                        terminated = True
+                        if self.discourage_early_end and self._current_step <= self.first_end_step:
+                                reward += self.REWARD_MAX_EARLY_END*(1-percent_complete)
+                else:
+                    reward += self.REWARD_INVALID_END
                 
 
         truncated = True if self._current_step >= self._step_limit else False
@@ -563,6 +581,13 @@ class TreeWorld(gym.Env):
                     num_scans += self._map_scanned_left[row,col] + self._map_scanned_right[row,col] + self._map_scanned_up[row,col] + self._map_scanned_down[row,col]
 
         return num_scans/num_sides
+    
+    def _calc_percent_explored(self):
+        """Calculate the percent (fraction) of tiles that are known in 2D"""
+        num_tiles = self._map_rows * self._map_cols
+        num_scanned = np.sum(self._map_2dknown)
+
+        return num_scanned/num_tiles
 
 
 
