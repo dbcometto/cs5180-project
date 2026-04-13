@@ -51,7 +51,7 @@ friend = Agent(policy)
 try:
     friend.train(train_env,epochs=100_000, batch_size=32, optimizer_epochs=8, clip_epsilon=0.2, 
                  start_seed=2025, gamma=0.99, 
-                 folderpath = folderpath, checkpoint_interval = 100, resume_epoch=8943)
+                 folderpath = folderpath, checkpoint_interval = 100, resume_epoch=10727)
 
 except KeyboardInterrupt:
     print("Interrupting...")

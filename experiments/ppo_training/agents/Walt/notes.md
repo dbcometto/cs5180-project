@@ -3,7 +3,9 @@
 First few attempts: memory issues and couldn't get through the optimization
 -> tried to clear up the tensor memory growth, and reduced batch size to 32
 
-
+Finally:
+    1160.2s to 4
+    35906.9s to 106 (wow... maybe the network is too big...)
 
 
 
@@ -27,9 +29,10 @@ do_normalize_advantage = True
 resume_epoch = None
 
 ### Training
-checkpoint_interval = 200
+checkpoint_interval = 100
 batch_size = 32
 optimizer_epochs = 4
+minibatch_size = 512
 
 ### World
 step_limit = 499

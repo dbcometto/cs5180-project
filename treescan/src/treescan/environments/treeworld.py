@@ -58,7 +58,7 @@ class TreeWorld(gym.Env):
                  render_mode = None, 
                  use_fixed_map = True, 
                  flatten_obs = False, one_hot_obs = False, 
-                 obs_as_tensor = True, enable_extra_channels = False,
+                 obs_as_tensor = True, enable_extra_channels = False, enable_extra_dist_channel = False,
                  discourage_early_end = False, first_end_step = 20,
                  do_smooth_end_dist = False, 
                  do_smooth_complete_reward = False, smooth_complete_version = "linear",
@@ -69,6 +69,7 @@ class TreeWorld(gym.Env):
         self.do_one_hot = one_hot_obs
         self.obs_as_tensor = obs_as_tensor
         self.enable_extra_channels = enable_extra_channels
+        self.enable_extra_dist_channel = enable_extra_dist_channel
 
         self.discourage_early_end = discourage_early_end
         self.first_end_step = first_end_step
@@ -113,7 +114,10 @@ class TreeWorld(gym.Env):
         if not enable_extra_channels:
             self.observation_space = gym.spaces.Box(0,1,shape=(11,map_rows,map_cols))
         else:
-            self.observation_space = gym.spaces.Box(0,1,shape=(14,map_rows,map_cols))
+            if self.enable_extra_dist_channel:
+                self.observation_space = gym.spaces.Box(0,1,shape=(15,map_rows,map_cols))
+            else:
+                self.observation_space = gym.spaces.Box(0,1,shape=(14,map_rows,map_cols))
         self.action_space = gym.spaces.Discrete(7)
 
         # Define Movement Array
@@ -211,22 +215,41 @@ class TreeWorld(gym.Env):
         """Return an observaton"""
 
         if self.enable_extra_channels:
-            obs = np.stack([
-            self._map_agent_location,
-            self._map_start_location,
-            self._map_2dknown,
-            self._map_3dknown,
-            self._map_occupied,
-            self._map_rocks,
-            self._map_trees,
-            self._map_scanned_left,
-            self._map_scanned_right,
-            self._map_scanned_up,
-            self._map_scanned_down,
-            self._scalar_trees_remaining,
-            self._scalar_trees_completed,
-            self._scalar_trees_all_complete
-        ], axis=0)
+            if self.enable_extra_dist_channel:
+                obs = np.stack([
+                    self._map_agent_location,
+                    self._map_start_location,
+                    self._map_2dknown,
+                    self._map_3dknown,
+                    self._map_occupied,
+                    self._map_rocks,
+                    self._map_trees,
+                    self._map_scanned_left,
+                    self._map_scanned_right,
+                    self._map_scanned_up,
+                    self._map_scanned_down,
+                    self._scalar_trees_remaining,
+                    self._scalar_trees_completed,
+                    self._scalar_trees_all_complete,
+                    self._scalar_dist_to_start,
+                ], axis=0)
+            else:
+                obs = np.stack([
+                    self._map_agent_location,
+                    self._map_start_location,
+                    self._map_2dknown,
+                    self._map_3dknown,
+                    self._map_occupied,
+                    self._map_rocks,
+                    self._map_trees,
+                    self._map_scanned_left,
+                    self._map_scanned_right,
+                    self._map_scanned_up,
+                    self._map_scanned_down,
+                    self._scalar_trees_remaining,
+                    self._scalar_trees_completed,
+                    self._scalar_trees_all_complete
+                ], axis=0)
             
         else:
             obs = np.stack([
@@ -292,9 +315,12 @@ class TreeWorld(gym.Env):
         self._map_scanned_down = np.zeros((self._map_rows,self._map_cols), dtype=int)       # 1 where tree is scanned, 0 elsewhere
 
         if self.enable_extra_channels:
-            self._scalar_trees_remaining = np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent remaining
-            self._scalar_trees_completed = np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent completed
-            self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=float) # 1 if all trees are scanned else 0
+            self._scalar_trees_remaining = np.ones((self._map_rows,self._map_cols), dtype=float)        # 0 to 1 continuous percent remaining
+            self._scalar_trees_completed = np.zeros((self._map_rows,self._map_cols), dtype=float)       # 0 to 1 continuous percent completed
+            self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 if all trees are scanned else 0
+
+            if self.enable_extra_dist_channel:
+                self._scalar_dist_to_start = np.zeros((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 normalized distance from start
 
 
 
@@ -440,6 +466,16 @@ class TreeWorld(gym.Env):
             self._scalar_trees_all_complete = np.ones((self._map_rows,self._map_cols), dtype=float) # 1 if all trees are scanned else 0
         else:
             self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=float)
+
+    def _update_scalars_dist_to_start(self):
+        """Update the scalar distance to start channel with normalized manhatten distance"""
+        max_man_dist = (self._map_rows-1) + (self._map_cols-1)
+        man_dist_to_start = np.sum(np.abs(self._agent_location - self._agent_start_location))
+
+        norm_dist = man_dist_to_start/max_man_dist
+        self._scalar_dist_to_start = norm_dist*np.ones((self._map_rows,self._map_cols), dtype=float)   # 0 to 1 normalized distance from start
+
+
 
     
 

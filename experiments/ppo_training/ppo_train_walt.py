@@ -32,7 +32,7 @@ alpha_value = 0.0007
 do_normalize_advantage = True
 
 # Resume
-resume_epoch = None
+resume_epoch = 4
 
 # Training
 checkpoint_interval = 100
