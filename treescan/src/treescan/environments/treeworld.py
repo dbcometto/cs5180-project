@@ -73,7 +73,7 @@ class TreeWorld(gym.Env):
                  do_smooth_end_dist = False, 
                  do_smooth_complete_reward = False, smooth_complete_version = "linear",
                  do_gate_ending = False,
-                 do_expand_rendering = False,
+                 do_expand_rendering = False, render_label = None,
                  do_reward_tree_complete = False):
         """Create the tree world"""
 
@@ -92,6 +92,7 @@ class TreeWorld(gym.Env):
         self.do_reward_tree_complete = do_reward_tree_complete
 
         self.do_expand_rendering = do_expand_rendering
+        self.render_label = render_label
        
         self._step_limit = step_limit
         self._current_step = -1
@@ -925,7 +926,7 @@ class TreeWorld(gym.Env):
                 canvas,
                 self.SCAN_COLOR,
                 np.array([self.info_width_start,0]) + (self._agent_location[::-1] + 0.5) * self.pix_square_size,
-                self.RANGE_3D*self.pix_square_size,
+                (self.RANGE_3D-0.5)*self.pix_square_size,
                 width=2
                 )
                 
@@ -962,6 +963,10 @@ class TreeWorld(gym.Env):
         if self.do_expand_rendering:
             text_surface = self.font.render(f"Current Step: {int(self._current_step):4d}  |  Accumulated Reward: {self._accum_reward:5.2f}", True, self.TEXT_COLOR)
             canvas.blit(text_surface, (self.info_width_start, self.pix_square_size * row))
+
+            if self.render_label is not None:
+                text_surface = self.font.render(f"Agent: {self.render_label}", True, self.TEXT_COLOR)
+                canvas.blit(text_surface, (self.info_width_start, self.pix_square_size * row + 2*self.font.get_height()))
 
 
 
