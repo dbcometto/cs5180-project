@@ -20,8 +20,8 @@ start = time.time()
 
 
 # Config
-episodes = 10
-runs = 2
+episodes = 50
+runs = 4
 start_seed = 2025
 test_name = "final_test"
 folderpath = "C:\\workspace\\cs5180-project\\experiments"
@@ -29,6 +29,7 @@ folderpath = "C:\\workspace\\cs5180-project\\experiments"
 
 # World - Standard Reward for Comparison
 step_limit = 499
+do_extra_info = True
 use_fixed_map = False
 enable_extra_channels = True
 enable_extra_dist_channel = True
@@ -50,7 +51,19 @@ datarequest = {
         "enable_extra_channels": True,
         "enable_extra_dist_channel": True,
         "checkpoint": None,
-    }
+    },
+    "dqn_v5": {
+        "folder": "dqn_test",
+        "enable_extra_channels": True,
+        "enable_extra_dist_channel": False,
+        "checkpoint": None,
+    },
+    # "ddqn_v5": {
+    #     "folder": "dqn_test",
+    #     "enable_extra_channels": True,
+    #     "enable_extra_dist_channel": False,
+    #     "checkpoint": None,
+    # },
 }
 
 
@@ -72,7 +85,7 @@ for agent_name, data in pbar:
         friend = Agent.load_from_checkpoint(agent_path, checkpoint)
 
     # Env
-    test_env = TreeWorld(render_mode=None, obs_as_tensor=True, 
+    test_env = TreeWorld(render_mode=None, obs_as_tensor=True, do_extra_info=do_extra_info,
                          step_limit=step_limit,
                          use_fixed_map=use_fixed_map,
                          enable_extra_channels=enable_extra_channels,       # Based on agent

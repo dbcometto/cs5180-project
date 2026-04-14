@@ -73,7 +73,7 @@ class TreeWorld(gym.Env):
                  do_smooth_end_dist = False, 
                  do_smooth_complete_reward = False, smooth_complete_version = "linear",
                  do_gate_ending = False,
-                 do_expand_rendering = False, render_label = None,
+                 do_expand_rendering = False, render_label = None, do_extra_info = False,
                  do_reward_tree_complete = False):
         """Create the tree world"""
 
@@ -93,6 +93,7 @@ class TreeWorld(gym.Env):
 
         self.do_expand_rendering = do_expand_rendering
         self.render_label = render_label
+        self.do_extra_info = do_extra_info
        
         self._step_limit = step_limit
         self._current_step = -1
@@ -177,6 +178,9 @@ class TreeWorld(gym.Env):
         # Rendering trackers
         self._accum_reward = None
         self._last_action = None
+
+        # Info trackers
+        self._count_scans = None
 
 
     # Helper Classes
@@ -298,9 +302,21 @@ class TreeWorld(gym.Env):
 
     def _get_info(self):
         """Return extra info"""
-        return {
+        if not self.do_extra_info:
+            info = {
                 "current_step": self._current_step,
-                }
+            }  
+
+        else:
+            info = {
+                "current_step": self._current_step,
+                "percent_explored": self._calc_percent_explored(),
+                "percent_complete": self._calc_percent_complete(),
+                "dist_from_start": np.linalg.norm(self._agent_location-self._agent_start_location),
+                "count_scans": self._count_scans,
+            }   
+
+        return info
     
     # def _obs_to_one_hot(self,obs):
     #     agent_pos = np.zeros_like(self._map)
@@ -527,6 +543,9 @@ class TreeWorld(gym.Env):
         self._accum_reward = 0
         self._last_action = None
 
+        # Info trackers
+        self._count_scans = 0
+
 
         observation = self._get_obs()
         info = self._get_info()
@@ -565,6 +584,7 @@ class TreeWorld(gym.Env):
         reward += self.REWARD_EXPLORE_TILE*newtiles # Reward for exploring new tiles
 
         if action == self.ACTIONS.SCAN:
+            self._count_scans += 1
             # count fully-scanned trees before the scan so we can reward new completions
             treesDoneBefore = self._count_fully_scanned_trees() if self.do_reward_tree_complete else 0
             new3dtiles, newfaces = self._update_map_3dscan()
