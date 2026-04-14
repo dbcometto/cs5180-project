@@ -20,12 +20,21 @@ class TreeWorld(gym.Env):
     GRASS_COLOR = "#B6DD91"
     TREE_COLOR = "#059635"
     ROCK_COLOR = "#584935"
-    PANEL_SEPARATION = 15
     UNKNOWN_COLOR = "#8D8D8D"
     ONLY2D_COLOR = "#FFFCDF"
     OCCUPIED_COLOR = "#8D6000"
     SCANNED_COLOR = "#FFC918"
     START_COLOR = "#10C7FF"
+    TEXT_COLOR = "#131111"
+    SCAN_COLOR = "#FF5100"
+    END_COLOR = "#FFFDF4"
+
+    PANEL_SEPARATION = 15
+    TEXT_PAD = 70
+    FONTNAME = "consolas"
+
+    END_SQUARE_PERCENT = 0.33
+    START_SQUARE_PERCENT = 0.33
 
     # Env Params
     RANGE_2D = 4
@@ -59,11 +68,12 @@ class TreeWorld(gym.Env):
                  render_mode = None, 
                  use_fixed_map = True, 
                  flatten_obs = False, one_hot_obs = False, 
-                 obs_as_tensor = True, enable_extra_channels = False,
+                 obs_as_tensor = True, enable_extra_channels = False, enable_extra_dist_channel = False,
                  discourage_early_end = False, first_end_step = 20,
                  do_smooth_end_dist = False, 
                  do_smooth_complete_reward = False, smooth_complete_version = "linear",
                  do_gate_ending = False,
+                 do_expand_rendering = False,
                  do_reward_tree_complete = False):
         """Create the tree world"""
 
@@ -71,6 +81,7 @@ class TreeWorld(gym.Env):
         self.do_one_hot = one_hot_obs
         self.obs_as_tensor = obs_as_tensor
         self.enable_extra_channels = enable_extra_channels
+        self.enable_extra_dist_channel = enable_extra_dist_channel
 
         self.discourage_early_end = discourage_early_end
         self.first_end_step = first_end_step
@@ -79,7 +90,9 @@ class TreeWorld(gym.Env):
         self.smooth_complete_version = smooth_complete_version
         self.do_gate_ending = do_gate_ending
         self.do_reward_tree_complete = do_reward_tree_complete
-        
+
+        self.do_expand_rendering = do_expand_rendering
+       
         self._step_limit = step_limit
         self._current_step = -1
 
@@ -116,7 +129,10 @@ class TreeWorld(gym.Env):
         if not enable_extra_channels:
             self.observation_space = gym.spaces.Box(0,1,shape=(11,map_rows,map_cols))
         else:
-            self.observation_space = gym.spaces.Box(0,1,shape=(14,map_rows,map_cols))
+            if self.enable_extra_dist_channel:
+                self.observation_space = gym.spaces.Box(0,1,shape=(15,map_rows,map_cols))
+            else:
+                self.observation_space = gym.spaces.Box(0,1,shape=(14,map_rows,map_cols))
         self.action_space = gym.spaces.Discrete(7)
 
         # Define Movement Array
@@ -137,7 +153,7 @@ class TreeWorld(gym.Env):
 
         self.window_width = window_width
         self.window_height = window_height
-        self.info_width_start = self.window_width/2 + self.PANEL_SEPARATION
+        self.info_width_start = (self.window_width + self.PANEL_SEPARATION)/2
 
         self.panel_height = self.window_height
         self.panel_width = int((self.window_width-self.PANEL_SEPARATION)/2)
@@ -155,8 +171,11 @@ class TreeWorld(gym.Env):
 
         self.window = None
         self.clock = None
-        
-        # if self._map_rows > self._map_cols
+        self.font = None
+
+        # Rendering trackers
+        self._accum_reward = None
+        self._last_action = None
 
 
     # Helper Classes
@@ -214,22 +233,41 @@ class TreeWorld(gym.Env):
         """Return an observaton"""
 
         if self.enable_extra_channels:
-            obs = np.stack([
-            self._map_agent_location,
-            self._map_start_location,
-            self._map_2dknown,
-            self._map_3dknown,
-            self._map_occupied,
-            self._map_rocks,
-            self._map_trees,
-            self._map_scanned_left,
-            self._map_scanned_right,
-            self._map_scanned_up,
-            self._map_scanned_down,
-            self._scalar_trees_remaining,
-            self._scalar_trees_completed,
-            self._scalar_trees_all_complete
-        ], axis=0)
+            if self.enable_extra_dist_channel:
+                obs = np.stack([
+                    self._map_agent_location,
+                    self._map_start_location,
+                    self._map_2dknown,
+                    self._map_3dknown,
+                    self._map_occupied,
+                    self._map_rocks,
+                    self._map_trees,
+                    self._map_scanned_left,
+                    self._map_scanned_right,
+                    self._map_scanned_up,
+                    self._map_scanned_down,
+                    self._scalar_trees_remaining,
+                    self._scalar_trees_completed,
+                    self._scalar_trees_all_complete,
+                    self._scalar_dist_to_start,
+                ], axis=0)
+            else:
+                obs = np.stack([
+                    self._map_agent_location,
+                    self._map_start_location,
+                    self._map_2dknown,
+                    self._map_3dknown,
+                    self._map_occupied,
+                    self._map_rocks,
+                    self._map_trees,
+                    self._map_scanned_left,
+                    self._map_scanned_right,
+                    self._map_scanned_up,
+                    self._map_scanned_down,
+                    self._scalar_trees_remaining,
+                    self._scalar_trees_completed,
+                    self._scalar_trees_all_complete
+                ], axis=0)
             
         else:
             obs = np.stack([
@@ -295,9 +333,12 @@ class TreeWorld(gym.Env):
         self._map_scanned_down = np.zeros((self._map_rows,self._map_cols), dtype=int)       # 1 where tree is scanned, 0 elsewhere
 
         if self.enable_extra_channels:
-            self._scalar_trees_remaining = np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent remaining
-            self._scalar_trees_completed = np.ones((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 continuous percent completed
-            self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=float) # 1 if all trees are scanned else 0
+            self._scalar_trees_remaining = np.ones((self._map_rows,self._map_cols), dtype=float)        # 0 to 1 continuous percent remaining
+            self._scalar_trees_completed = np.zeros((self._map_rows,self._map_cols), dtype=float)       # 0 to 1 continuous percent completed
+            self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=int)      # 1 if all trees are scanned else 0
+
+            if self.enable_extra_dist_channel:
+                self._scalar_dist_to_start = np.zeros((self._map_rows,self._map_cols), dtype=float)     # 0 to 1 normalized distance from start
 
 
 
@@ -444,6 +485,16 @@ class TreeWorld(gym.Env):
         else:
             self._scalar_trees_all_complete = np.zeros((self._map_rows,self._map_cols), dtype=float)
 
+    def _update_scalars_dist_to_start(self):
+        """Update the scalar distance to start channel with normalized manhatten distance"""
+        max_man_dist = (self._map_rows-1) + (self._map_cols-1)
+        man_dist_to_start = np.sum(np.abs(self._agent_location - self._agent_start_location))
+
+        norm_dist = man_dist_to_start/max_man_dist
+        self._scalar_dist_to_start = norm_dist*np.ones((self._map_rows,self._map_cols), dtype=float)   # 0 to 1 normalized distance from start
+
+
+
     
 
 
@@ -470,6 +521,10 @@ class TreeWorld(gym.Env):
         # Reset maps
         self._reset_knowledge_maps()
         self._update_map_agent_location()
+
+        # Render Trackers
+        self._accum_reward = 0
+        self._last_action = None
 
 
         observation = self._get_obs()
@@ -568,6 +623,9 @@ class TreeWorld(gym.Env):
                 reward += self.REWARD_FAR_END if dist > self.END_DIST_THRESHOLD else 0
                 
 
+        # Render Trackers
+        self._accum_reward += reward
+        self._last_action = action
 
         observation = self._get_obs()
         info = self._get_info()
@@ -630,11 +688,14 @@ class TreeWorld(gym.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode(
-                (self.window_width, self.window_height)
-            )
+            self.window = pygame.display.set_mode((self.window_width, self.window_height))
+
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
+
+        if self.font is None and self.render_mode == "human":
+            pygame.font.init()
+            self.font = pygame.font.SysFont("arial",24)
 
         canvas = pygame.Surface((self.window_width, self.window_height))
         canvas.fill(color=self.BACKGROUND_COLOR)
@@ -824,8 +885,8 @@ class TreeWorld(gym.Env):
                         canvas,
                         self.START_COLOR,
                         pygame.Rect(
-                            np.array([self.info_width_start + 0.33*self.pix_square_size,0+0.33*self.pix_square_size]) + self.pix_square_size * np.array([c,r]),
-                            (0.33*self.pix_square_size, 0.33*self.pix_square_size),
+                            np.array([self.info_width_start + self.START_SQUARE_PERCENT*self.pix_square_size,0+self.START_SQUARE_PERCENT*self.pix_square_size]) + self.pix_square_size * np.array([c,r]),
+                            (self.START_SQUARE_PERCENT*self.pix_square_size, self.START_SQUARE_PERCENT*self.pix_square_size),
                         ),
                     )
 
@@ -857,6 +918,27 @@ class TreeWorld(gym.Env):
             self.pix_square_size / 3,
         )
 
+        # Draw actions
+        if self.do_expand_rendering:
+            if self._last_action == self.ACTIONS.SCAN:
+                pygame.draw.circle(
+                canvas,
+                self.SCAN_COLOR,
+                np.array([self.info_width_start,0]) + (self._agent_location[::-1] + 0.5) * self.pix_square_size,
+                self.RANGE_3D*self.pix_square_size,
+                width=2
+                )
+                
+            if self._last_action == self.ACTIONS.END:
+                pygame.draw.rect(
+                            canvas,
+                            self.END_COLOR,
+                            pygame.Rect(
+                                np.array([self.info_width_start + self.END_SQUARE_PERCENT*self.pix_square_size,0+self.END_SQUARE_PERCENT*self.pix_square_size]) + self.pix_square_size * self._agent_location[::-1],
+                                (self.END_SQUARE_PERCENT*self.pix_square_size, self.END_SQUARE_PERCENT*self.pix_square_size),
+                            ),
+                        )
+
         # Draw gridlines
         for col in range(self._map_cols+1):
             pygame.draw.line(
@@ -874,6 +956,12 @@ class TreeWorld(gym.Env):
                 (self.info_width_start + self.pix_square_size * self._map_cols, self.pix_square_size * row),
                 width=3,
             )
+
+
+        # Draw Text Status
+        if self.do_expand_rendering:
+            text_surface = self.font.render(f"Current Step: {int(self._current_step):4d}  |  Accumulated Reward: {self._accum_reward:5.2f}", True, self.TEXT_COLOR)
+            canvas.blit(text_surface, (self.info_width_start, self.pix_square_size * row))
 
 
 

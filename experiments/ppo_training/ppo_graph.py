@@ -12,8 +12,11 @@ from treescan.policies import DiscreteReinforce
 
 from treescan.environments import TreeWorld
 
-friend_name = "MarvJr"
-test_names = ["test0","test760"]
+friend_name = "Larry"
+test_names = ["test0","test642"]
+
+# friend_name = "Fred"
+# test_names = ["test0", "test10727"]
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"

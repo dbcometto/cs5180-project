@@ -15,16 +15,16 @@ import time
 start = time.time()
 
 friend_name = "Fred"
-test_name = "test1"
+test_name = "test13450"
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
-# friend = Agent.load_from_checkpoint(friend_folderpath, 10727)
+# friend = Agent.load_from_checkpoint(friend_folderpath, 0)
 
 
 test_env = TreeWorld(render_mode=None,step_limit=999,obs_as_tensor=True, use_fixed_map=False, enable_extra_channels=False)
 
-friend_test = friend.test(test_env,episodes=10,runs=4,start_seed=2025, folderpath=friend_folderpath, test_name=test_name)
+friend_test = friend.test(test_env,episodes=100,runs=4,start_seed=2025, folderpath=friend_folderpath, test_name=test_name)
 
 print(f"Finished testing after {time.time()-start:4.1f}s")
