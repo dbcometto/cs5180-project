@@ -17,7 +17,7 @@ from version_configs import makeEnv
 
 # Config
 version='v5'
-friend_name = "dqn_v5"
+friend_name = "ddqn_v5"
 start_seed= 2102 # 2027 is classic, 2030 is good, 2031 is really good
 demos = 10000
 
@@ -32,8 +32,7 @@ demo_env = makeEnv(version, force_fixed_map=True)
 demo_env.metadata["render_fps"]=8
 demo_env.render_mode ="human"
 demo_env.do_expand_rendering = True
-demo_env.render_label = "DQN"
-
+demo_env.render_label = "DDQN"
 
 # Loop
 seed = start_seed
