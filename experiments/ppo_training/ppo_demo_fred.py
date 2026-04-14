@@ -14,12 +14,12 @@ from collections import OrderedDict
 
 
 friend_name = "Fred"
-seed=2027
+seed=2031 # 2027 is classic, 2030 is good, 2031 is really good
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
-# friend = Agent.load_from_checkpoint(friend_folderpath,1000)
+# friend = Agent.load_from_checkpoint(friend_folderpath,10727)
 
 
 
@@ -30,4 +30,4 @@ demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_
 torch.manual_seed(seed)
 friend.generate_trajectory(demo_env,seed=seed)
 print("Finished")
-demo_env.hold_frame(duration=20000)
+demo_env.hold_frame(duration=3000)

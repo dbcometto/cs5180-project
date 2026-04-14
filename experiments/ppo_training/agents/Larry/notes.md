@@ -7,10 +7,14 @@ Down to ~40s per batch to start, so already huge improvement
 
 31189.5s to 640
 50652.5s to 1457
+3703.5s to 1513
+-1.25hr
+14190.8s to 1625
+
+Raw 99734s = 27.7 hrs -> 26.5 hrs
 
 
-
-
+53115.9s to 2510 = 14.75 hrs
 
 
 ## Setup

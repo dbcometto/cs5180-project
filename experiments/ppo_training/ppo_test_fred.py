@@ -15,7 +15,7 @@ import time
 start = time.time()
 
 friend_name = "Fred"
-test_name = "test11985"
+test_name = "test13450"
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"

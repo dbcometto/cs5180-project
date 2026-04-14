@@ -15,7 +15,7 @@ import time
 start = time.time()
 
 friend_name = "Larry"
-test_name = "test1457"
+test_name = "test2510"
 gamma = 0.99
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"

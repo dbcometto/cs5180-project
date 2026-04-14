@@ -20,12 +20,21 @@ class TreeWorld(gym.Env):
     GRASS_COLOR = "#B6DD91"
     TREE_COLOR = "#059635"
     ROCK_COLOR = "#584935"
-    PANEL_SEPARATION = 15
     UNKNOWN_COLOR = "#8D8D8D"
     ONLY2D_COLOR = "#FFFCDF"
     OCCUPIED_COLOR = "#8D6000"
     SCANNED_COLOR = "#FFC918"
     START_COLOR = "#10C7FF"
+    TEXT_COLOR = "#131111"
+    SCAN_COLOR = "#FF5100"
+    END_COLOR = "#FFFDF4"
+
+    PANEL_SEPARATION = 15
+    TEXT_PAD = 70
+    FONTNAME = "consolas"
+
+    END_SQUARE_PERCENT = 0.33
+    START_SQUARE_PERCENT = 0.33
 
     # Env Params
     RANGE_2D = 4
@@ -62,7 +71,8 @@ class TreeWorld(gym.Env):
                  discourage_early_end = False, first_end_step = 20,
                  do_smooth_end_dist = False, 
                  do_smooth_complete_reward = False, smooth_complete_version = "linear",
-                 do_gate_ending = False):
+                 do_gate_ending = False,
+                 do_expand_rendering = False,):
         """Create the tree world"""
 
         self.do_flatten_obs = flatten_obs
@@ -77,6 +87,8 @@ class TreeWorld(gym.Env):
         self.do_smooth_complete_reward = do_smooth_complete_reward
         self.smooth_complete_version = smooth_complete_version
         self.do_gate_ending = do_gate_ending
+
+        self.do_expand_rendering = do_expand_rendering
         
         self._step_limit = step_limit
         self._current_step = -1
@@ -138,7 +150,7 @@ class TreeWorld(gym.Env):
 
         self.window_width = window_width
         self.window_height = window_height
-        self.info_width_start = self.window_width/2 + self.PANEL_SEPARATION
+        self.info_width_start = (self.window_width + self.PANEL_SEPARATION)/2
 
         self.panel_height = self.window_height
         self.panel_width = int((self.window_width-self.PANEL_SEPARATION)/2)
@@ -156,8 +168,11 @@ class TreeWorld(gym.Env):
 
         self.window = None
         self.clock = None
-        
-        # if self._map_rows > self._map_cols
+        self.font = None
+
+        # Rendering trackers
+        self._accum_reward = None
+        self._last_action = None
 
 
     # Helper Classes
@@ -504,6 +519,10 @@ class TreeWorld(gym.Env):
         self._reset_knowledge_maps()
         self._update_map_agent_location()
 
+        # Render Trackers
+        self._accum_reward = 0
+        self._last_action = None
+
 
         observation = self._get_obs()
         info = self._get_info()
@@ -596,6 +615,9 @@ class TreeWorld(gym.Env):
                 reward += self.REWARD_FAR_END if dist > self.END_DIST_THRESHOLD else 0
                 
 
+        # Render Trackers
+        self._accum_reward += reward
+        self._last_action = action
 
         observation = self._get_obs()
         info = self._get_info()
@@ -645,11 +667,14 @@ class TreeWorld(gym.Env):
         if self.window is None and self.render_mode == "human":
             pygame.init()
             pygame.display.init()
-            self.window = pygame.display.set_mode(
-                (self.window_width, self.window_height)
-            )
+            self.window = pygame.display.set_mode((self.window_width, self.window_height))
+
         if self.clock is None and self.render_mode == "human":
             self.clock = pygame.time.Clock()
+
+        if self.font is None and self.render_mode == "human":
+            pygame.font.init()
+            self.font = pygame.font.SysFont("arial",24)
 
         canvas = pygame.Surface((self.window_width, self.window_height))
         canvas.fill(color=self.BACKGROUND_COLOR)
@@ -839,8 +864,8 @@ class TreeWorld(gym.Env):
                         canvas,
                         self.START_COLOR,
                         pygame.Rect(
-                            np.array([self.info_width_start + 0.33*self.pix_square_size,0+0.33*self.pix_square_size]) + self.pix_square_size * np.array([c,r]),
-                            (0.33*self.pix_square_size, 0.33*self.pix_square_size),
+                            np.array([self.info_width_start + self.START_SQUARE_PERCENT*self.pix_square_size,0+self.START_SQUARE_PERCENT*self.pix_square_size]) + self.pix_square_size * np.array([c,r]),
+                            (self.START_SQUARE_PERCENT*self.pix_square_size, self.START_SQUARE_PERCENT*self.pix_square_size),
                         ),
                     )
 
@@ -872,6 +897,27 @@ class TreeWorld(gym.Env):
             self.pix_square_size / 3,
         )
 
+        # Draw actions
+        if self.do_expand_rendering:
+            if self._last_action == self.ACTIONS.SCAN:
+                pygame.draw.circle(
+                canvas,
+                self.SCAN_COLOR,
+                np.array([self.info_width_start,0]) + (self._agent_location[::-1] + 0.5) * self.pix_square_size,
+                self.RANGE_3D*self.pix_square_size,
+                width=2
+                )
+                
+            if self._last_action == self.ACTIONS.END:
+                pygame.draw.rect(
+                            canvas,
+                            self.END_COLOR,
+                            pygame.Rect(
+                                np.array([self.info_width_start + self.END_SQUARE_PERCENT*self.pix_square_size,0+self.END_SQUARE_PERCENT*self.pix_square_size]) + self.pix_square_size * self._agent_location[::-1],
+                                (self.END_SQUARE_PERCENT*self.pix_square_size, self.END_SQUARE_PERCENT*self.pix_square_size),
+                            ),
+                        )
+
         # Draw gridlines
         for col in range(self._map_cols+1):
             pygame.draw.line(
@@ -889,6 +935,12 @@ class TreeWorld(gym.Env):
                 (self.info_width_start + self.pix_square_size * self._map_cols, self.pix_square_size * row),
                 width=3,
             )
+
+
+        # Draw Text Status
+        if self.do_expand_rendering:
+            text_surface = self.font.render(f"Current Step: {int(self._current_step):4d}  |  Accumulated Reward: {self._accum_reward:5.2f}", True, self.TEXT_COLOR)
+            canvas.blit(text_surface, (self.info_width_start, self.pix_square_size * row))
 
 
 
