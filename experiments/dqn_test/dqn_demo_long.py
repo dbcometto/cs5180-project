@@ -15,17 +15,17 @@ from tqdm import tqdm
 
 
 # Config
-friend_name = "Fred"
-start_seed= 2101 # 2027 is classic, 2030 is good, 2031 is really good
+friend_name = "dqn_v7"
+start_seed= 2102 # 2027 is classic, 2030 is good, 2031 is really good
 demos = 100
 
 
 # Setup
-agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
+agents_folderpath = "C:\\workspace\\cs5180-project\\experiments\\dqn_test\\agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 # friend = Agent.load_from_checkpoint(friend_folderpath,10727)
-demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=False, do_expand_rendering=True, render_label="MC PPO")
+demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=False, do_expand_rendering=True, enable_extra_channels=True, render_label="DQN v7")
 demo_env.metadata["render_fps"]=8
 
 
