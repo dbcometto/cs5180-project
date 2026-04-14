@@ -1,2 +1,3 @@
 from .utils import generate_trajectory, generate_trajectory_with_prob, append_return_to_trajectories
 from .utils import SpecialJSONEncoder
+from .action_viz import collect_action_stats, plot_directional, plot_non_directional, render_action_viz
