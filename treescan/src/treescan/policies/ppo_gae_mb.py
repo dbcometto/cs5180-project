@@ -141,12 +141,12 @@ class DiscretePPOGAEMB(Policy):
                         # Grab data
                         a = self.action_to_index[a]
                         with torch.no_grad(): 
-                            logits = self.logit_network(obs)
+                            logits = self.logit_network(obs).squeeze(0) # Otherwise is [1, A] and broadcasting is wrong!!
                             dist = torch.distributions.Categorical(logits=logits)
                             log_prob = dist.log_prob(torch.tensor(a,dtype=torch.int64))
 
-                            value = self.value_network(obs).squeeze(-1) # Squeezing to get rid of batch dimension after network
-                            next_value = self.value_network(next_obs).squeeze(-1) if not term else torch.zeros_like(value)
+                            value = self.value_network(obs).squeeze(0).squeeze(-1) # Squeezing to get rid of batch dimension and then make it scalar after network
+                            next_value = self.value_network(next_obs).squeeze(0).squeeze(-1) if not term else torch.zeros_like(value)
 
                         # Calculations
                         G = r + gamma*G*(1-term)

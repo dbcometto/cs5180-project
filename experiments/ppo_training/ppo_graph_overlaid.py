@@ -20,17 +20,30 @@ datarequest = {
                     #    "test10727", 
                     #    "test11985", 
                     #    "test12226",
-                       "test13450",],
+                    #    "test13450",
+                       "test14102"],
         "use_mc": False,
         "batch_size": 32
     },
-    "Larry": {
+    # "Larry": {
+    #     "test_names": ["test0", 
+    #                 #    "test642", 
+    #                 #    "test1457", 
+    #                 #    "test1625",
+    #                    "test2510",],
+    #     "use_mc": True,
+    #     "batch_size": 32
+    # },
+    "Paul": {
         "test_names": ["test0", 
-                    #    "test642", 
-                    #    "test1457", 
-                    #    "test1625",
-                       "test2510",],
+                       "test15406",],
         "use_mc": True,
+        "batch_size": 32
+    },
+    "James": {
+        "test_names": ["test0", 
+                       "test8018",],
+        "use_mc": False,
         "batch_size": 32
     },
 }
