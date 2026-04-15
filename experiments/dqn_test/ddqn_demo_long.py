@@ -13,19 +13,24 @@ import torch
 from collections import OrderedDict
 from tqdm import tqdm
 
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from version_configs import makeEnv
+
 
 # Config
-friend_name = "ddqn_v5"
+version = "v8"  # which trained agent to demo
+friend_name = "ddqn_v8"
 start_seed= 2102 # 2027 is classic, 2030 is good, 2031 is really good
 demos = 100
 
 
 # Setup
-agents_folderpath = "C:\\workspace\\cs5180-project\\experiments\\dqn_test\\agents"
+agents_folderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 # friend = Agent.load_from_checkpoint(friend_folderpath,10727)
-demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=False, do_expand_rendering=True, enable_extra_channels=True, render_label="DDQN v5")
+demo_env = makeEnv(version)
 demo_env.metadata["render_fps"]=8
 
 

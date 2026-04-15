@@ -10,7 +10,7 @@ from version_configs import versionDescription
 agentsFolderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
 
 # change this to swap which training run to plot
-version = "v7"
+version = "v8"
 
 
 def rolling_stats(data, window=50):
