@@ -33,7 +33,7 @@ action_dim = len(action_list)
 
 
 agent_name = "Jeremy"
-agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
+agents_folderpath = "C:\\workspace\\cs5180-project\\experiments\\ppo_training\\agents"
 folderpath = f"{agents_folderpath}/{agent_name}"
 
 
@@ -52,7 +52,7 @@ friend = Agent(policy)
 try:
     friend.train(train_env,epochs=100_000, batch_size=32, optimizer_epochs=8, clip_epsilon=0.2, 
                  start_seed=seed, gamma=0.99, lambda_gae=0.95,
-                 folderpath = folderpath, checkpoint_interval = 500, resume_epoch=None)
+                 folderpath = folderpath, checkpoint_interval = 50, resume_epoch=14)
 
 except KeyboardInterrupt:
     print("Interrupting...")
