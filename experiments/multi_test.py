@@ -46,10 +46,16 @@ datarequest = {
         "enable_extra_dist_channel": False,
         "checkpoint": None,
     },
-    "Larry": {
+    # "Larry": {
+    #     "folder": "ppo_training",
+    #     "enable_extra_channels": True,
+    #     "enable_extra_dist_channel": True,
+    #     "checkpoint": None,
+    # },
+    "Jeremy": {
         "folder": "ppo_training",
-        "enable_extra_channels": True,
-        "enable_extra_dist_channel": True,
+        "enable_extra_channels": False,
+        "enable_extra_dist_channel": False,
         "checkpoint": None,
     },
     "dqn_v5": {

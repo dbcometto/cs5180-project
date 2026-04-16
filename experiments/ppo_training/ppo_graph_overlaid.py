@@ -25,6 +25,12 @@ datarequest = {
         "use_mc": False,
         "batch_size": 32
     },
+    "Jeremy": {
+        "test_names": ["test0", 
+                       "test472",],
+        "use_mc": True,
+        "batch_size": 32
+    },
     # "Larry": {
     #     "test_names": ["test0", 
     #                 #    "test642", 
@@ -34,18 +40,18 @@ datarequest = {
     #     "use_mc": True,
     #     "batch_size": 32
     # },
-    "Paul": {
-        "test_names": ["test0", 
-                       "test15406",],
-        "use_mc": True,
-        "batch_size": 32
-    },
-    "James": {
-        "test_names": ["test0", 
-                       "test8018",],
-        "use_mc": False,
-        "batch_size": 32
-    },
+    # "Paul": {
+    #     "test_names": ["test0", 
+    #                    "test15406",],
+    #     "use_mc": True,
+    #     "batch_size": 32
+    # },
+    # "James": {
+    #     "test_names": ["test0", 
+    #                    "test8018",],
+    #     "use_mc": False,
+    #     "batch_size": 32
+    # },
 }
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 
