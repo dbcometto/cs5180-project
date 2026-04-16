@@ -21,7 +21,8 @@ datarequest = {
                     #    "test11985", 
                     #    "test12226",
                     #    "test13450",
-                       "test14102"],
+                    #    "test14102",
+                       "test16493",],
         "use_mc": False,
         "batch_size": 32
     },
@@ -29,7 +30,7 @@ datarequest = {
         "test_names": ["test0", 
                        "test472",],
         "use_mc": True,
-        "batch_size": 32
+        "batch_size": None
     },
     # "Larry": {
     #     "test_names": ["test0", 

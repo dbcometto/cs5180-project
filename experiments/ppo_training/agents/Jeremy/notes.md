@@ -10,6 +10,8 @@ On main laptop:
 
 ## Setup:
 
+train_env = TreeWorld(render_mode=None, step_limit=999, obs_as_tensor=True, use_fixed_map=False)
+
 logit_network = SimpleConvNetwork(input_channels=obs_channels, output_width=action_dim)
 value_network = SimpleConvNetwork(input_channels=obs_channels, output_width=1)
 policy = DiscretePPOGAE(logit_network, value_network, actions=action_list, 

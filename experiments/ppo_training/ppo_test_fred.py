@@ -14,8 +14,8 @@ from treescan.environments import TreeWorld
 import time
 start = time.time()
 
-friend_name = "Jeremy"
-test_name = "test472"
+friend_name = "Fred"
+test_name = "test16493"
 
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
@@ -25,6 +25,6 @@ friend = Agent.load(friend_folderpath)
 
 test_env = TreeWorld(render_mode=None, step_limit=999, obs_as_tensor=True, use_fixed_map=False, enable_extra_channels=False)
 
-friend_test = friend.test(test_env, episodes=100, runs=4, start_seed=2025, folderpath=friend_folderpath, test_name=test_name)
+friend_test = friend.test(test_env, episodes=100, runs=4, start_seed=2025, folderpath=friend_folderpath, test_name=test_name, gamma=0.99)
 
 print(f"Finished testing after {time.time()-start:4.1f}s")

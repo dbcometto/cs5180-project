@@ -71,7 +71,7 @@ class Agent():
                 G = 0
                 for transition in reversed(T):
                     s,a,next_s,r,term,trunc,_ = transition
-                    G = r + gamma*G
+                    G = r + gamma*G*(1 - term)
 
                 episode_lengths[j,i] = len(T)
                 episode_returns[j,i] = G
