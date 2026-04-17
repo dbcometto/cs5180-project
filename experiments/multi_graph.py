@@ -26,7 +26,7 @@ datarequest = {
         "color": "maroon",
         "label": "MC PPO",
     },
-    "Larry": {
+    "Jeremy": {
         "folder": "ppo_training",
         "test_names": ["final_test"],
         "use_mc": True,
@@ -53,7 +53,31 @@ datarequest = {
         "color": "darkturquoise",
         "label": "DDQN (v5)",
     },
+    "dqn_v8": {
+        "folder": "dqn_test",
+        "test_names": ["final_test"],
+        "use_mc": False,
+        "batch_size": None,
+        "plot_loss": False,
+        "color": "magenta",
+        "label": "DQN (v8)",
+    },
+    "ddqn_v8": {
+        "folder": "dqn_test",
+        "test_names": ["final_test"],
+        "use_mc": False,
+        "batch_size": None,
+        "plot_loss": False,
+        "color": "slategrey",
+        "label": "DDQN (v8)",
+    },
 }
+alpha = 0.05
+num_episodes = 10
+
+
+
+
 
 # Helpers
 def rolling_avg(arr, window=40):
@@ -101,10 +125,10 @@ for friend_name, data in datarequest.items():
         training_results = training_results[:last_batch*batch_size].reshape(-1, batch_size).mean(axis=1)
         training_lengths = training_lengths[:last_batch*batch_size].reshape(-1, batch_size).mean(axis=1)
 
-    main_axs[0,0].plot(training_results,alpha=0.1,color=color)
+    main_axs[0,0].plot(training_results,alpha=alpha,color=color)
     main_axs[0,0].plot(rolling_avg(training_results),label=f"{label}",color=color)
 
-    main_axs[1,0].plot(training_lengths,alpha=0.1,color=color)
+    main_axs[1,0].plot(training_lengths,alpha=alpha,color=color)
     main_axs[1,0].plot(rolling_avg(training_lengths),label=f"{label}",color=color)
 
     if do_plot_individual:
@@ -137,15 +161,19 @@ for friend_name, data in datarequest.items():
 
         friend_test_return_avg = np.mean(np.array(friend_test["episode_returns"]),axis=0)
         friend_test_return_std = np.std(np.array(friend_test["episode_returns"]),axis=0)
+        fullmean_return = np.mean(friend_test["episode_returns"])
 
         friend_test_length_avg = np.mean(np.array(friend_test["episode_lengths"]),axis=0)
         friend_test_length_std = np.std(np.array(friend_test["episode_lengths"]),axis=0)
+        fullmean_lengths = np.mean(friend_test["episode_lengths"])
 
         main_axs[0,1].plot(friend_test_return_avg,label=f"{label}",color=color)
-        main_axs[0,1].fill_between(range(friend_test_return_avg.shape[0]),friend_test_return_avg-friend_test_return_std,friend_test_return_avg+friend_test_return_std,color=color,alpha=0.1)
+        main_axs[0,1].plot([0, num_episodes],[fullmean_return,fullmean_return],color=color,linestyle='--')
+        main_axs[0,1].fill_between(range(friend_test_return_avg.shape[0]),friend_test_return_avg-friend_test_return_std,friend_test_return_avg+friend_test_return_std,color=color,alpha=alpha)
 
         main_axs[1,1].plot(friend_test_length_avg,label=f"{label}",color=color)
-        main_axs[1,1].fill_between(range(friend_test_length_avg.shape[0]),friend_test_length_avg-friend_test_length_std,friend_test_length_avg+friend_test_length_std,color=color,alpha=0.1)
+        main_axs[1,1].plot([0, num_episodes],[fullmean_lengths,fullmean_lengths],color=color,linestyle='--')
+        main_axs[1,1].fill_between(range(friend_test_length_avg.shape[0]),friend_test_length_avg-friend_test_length_std,friend_test_length_avg+friend_test_length_std,color=color,alpha=alpha)
 
         if do_plot_individual:
             axs[0,1].plot(friend_test_return_avg,label=f"{test_name}: Mean")
@@ -155,36 +183,43 @@ for friend_name, data in datarequest.items():
             axs[1,1].fill_between(range(friend_test_length_avg.shape[0]),friend_test_length_avg-friend_test_length_std,friend_test_length_avg+friend_test_length_std,alpha=0.2,label=f"{test_name}: Std")
 
         # Percent Explored
-        alpha = 0.1
         metric = 100*np.array([[d["percent_explored"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
+        fullmean = np.mean(metric)
 
         main_axs[0,2].plot(avg,label=f"{label}",color=color)
+        main_axs[0,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
         main_axs[0,2].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
 
         # Percent Complete
         metric = 100*np.array([[d["percent_complete"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
+        fullmean = np.mean(metric)
 
         main_axs[1,2].plot(avg,label=f"{label}",color=color)
+        main_axs[1,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
         main_axs[1,2].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
 
         # Final Distance
         metric = np.array([[d["dist_from_start"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
+        fullmean = np.mean(metric)
 
         main_axs[0,3].plot(avg,label=f"{label}",color=color)
+        main_axs[0,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
         main_axs[0,3].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
 
         # Num Scans
         metric = np.array([[d["count_scans"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
+        fullmean = np.mean(metric)
 
         main_axs[1,3].plot(avg,label=f"{label}",color=color)
+        main_axs[1,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
         main_axs[1,3].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
         
 

@@ -22,22 +22,42 @@ datarequest = {
                     #    "test12226",
                     #    "test13450",
                     #    "test14102",
-                       "test16493",],
+                    #    "test16493",
+                       "test17667",],
         "use_mc": False,
-        "batch_size": 32
+        "batch_size": 32,
+        "label": "MC PPO"
     },
     "Jeremy": {
         "test_names": ["test0", 
-                       "test472",],
+                    #    "test472",
+                       "test1054",],
         "use_mc": True,
-        "batch_size": None
+        "batch_size": 32,
+        "label": "GAE PPO"
+    },
+    "Rod": {
+        "test_names": [],
+            # "test0", 
+            #            "test472",],
+        "use_mc": True,
+        "batch_size": 32,
+        "label": "GAE PPO with Shorter Truncation"
     },
     "Todd": {
         "test_names": [],
             # "test0", 
             #            "test472",],
         "use_mc": True,
-        "batch_size": None
+        "batch_size": 32,
+        "label": "GAE PPO with Shorter Truncation and Smoothed Reward"
+    },
+    "Ned": {
+        "test_names": ["test0", 
+                       "test1356",],
+        "use_mc": True,
+        "batch_size": 32,
+        "label": "GAE PPO with Smoothed Reward, Shorter Truncation, and Increased Entropy"
     },
     # "Larry": {
     #     "test_names": ["test0", 
@@ -85,7 +105,16 @@ for friend_name, data in datarequest.items():
     # friend = Agent.load_from_checkpoint(friend_folderpath,4721)
 
     fig,axs = plt.subplots(2,3,figsize=(20,7.5))
-    fig.suptitle(f"Performance | Agent: {friend_name}")
+
+    try:
+        label = data["label"]
+    except:
+        label = None
+
+    if label is not None:
+        fig.suptitle(f"Performance | {label}")
+    else:
+        fig.suptitle(f"Performance | Agent: {friend_name}")
 
 
 

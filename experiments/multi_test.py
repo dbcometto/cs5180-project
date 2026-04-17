@@ -20,14 +20,14 @@ start = time.time()
 
 
 # Config
-episodes = 50
+episodes = 10
 runs = 4
 start_seed = 2025
 test_name = "final_test"
 folderpath = "C:\\workspace\\cs5180-project\\experiments"
 
 
-# World - Standard Reward for Comparison
+# World - Standard Reward for Comparison (with somewhat reduced truncation limit)
 step_limit = 499
 do_extra_info = True
 use_fixed_map = False
@@ -37,7 +37,7 @@ do_smooth_complete_reward = False
 do_smooth_end_dist = False
 do_gate_ending = False
 do_reward_tree_complete = False
-gamma = 0.99
+gamma = 0.99 # this is probably best, could compare with the other as well
 
 datarequest = {
     "Fred": {
@@ -46,12 +46,6 @@ datarequest = {
         "enable_extra_dist_channel": False,
         "checkpoint": None,
     },
-    # "Larry": {
-    #     "folder": "ppo_training",
-    #     "enable_extra_channels": True,
-    #     "enable_extra_dist_channel": True,
-    #     "checkpoint": None,
-    # },
     "Jeremy": {
         "folder": "ppo_training",
         "enable_extra_channels": False,
@@ -64,12 +58,24 @@ datarequest = {
         "enable_extra_dist_channel": False,
         "checkpoint": None,
     },
-    # "ddqn_v5": {
-    #     "folder": "dqn_test",
-    #     "enable_extra_channels": True,
-    #     "enable_extra_dist_channel": False,
-    #     "checkpoint": None,
-    # },
+    "ddqn_v5": {
+        "folder": "dqn_test",
+        "enable_extra_channels": True,
+        "enable_extra_dist_channel": False,
+        "checkpoint": None,
+    },
+    "dqn_v8": {
+        "folder": "dqn_test",
+        "enable_extra_channels": True,
+        "enable_extra_dist_channel": False,
+        "checkpoint": None,
+    },
+    "ddqn_v8": {
+        "folder": "dqn_test",
+        "enable_extra_channels": True,
+        "enable_extra_dist_channel": False,
+        "checkpoint": None,
+    },
 }
 
 
@@ -94,10 +100,10 @@ for agent_name, data in pbar:
     test_env = TreeWorld(render_mode=None, obs_as_tensor=True, do_extra_info=do_extra_info,
                          step_limit=step_limit,
                          use_fixed_map=use_fixed_map,
-                         enable_extra_channels=enable_extra_channels,       # Based on agent
+                         enable_extra_channels=enable_extra_channels,         # Obs Based on agent
                          enable_extra_dist_channel=enable_extra_dist_channel,
-                         do_smooth_complete_reward=do_smooth_complete_reward,
-                         do_smooth_end_dist=do_smooth_end_dist,             # Standard reward and ending
+                         do_smooth_complete_reward=do_smooth_complete_reward, # Standard reward and ending
+                         do_smooth_end_dist=do_smooth_end_dist,             
                          do_gate_ending=do_gate_ending,
                          do_reward_tree_complete=do_reward_tree_complete,
                         )

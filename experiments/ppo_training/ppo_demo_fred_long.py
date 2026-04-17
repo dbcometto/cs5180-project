@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 
 # Config
-friend_name = "Todd"
+friend_name = "Ned"
 start_seed= 2101 # 2027 is classic, 2030 is good, 2031 is really good
 demos = 1000
 
