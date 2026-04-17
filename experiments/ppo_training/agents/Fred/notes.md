@@ -23,6 +23,9 @@ Raw 223490s = 62.080 hr -> 60.5 hrs
 Gaming laptop:
 56752.1s to 16493
 
+Main laptop:
+47233.8s to 17667
+
 
 
 

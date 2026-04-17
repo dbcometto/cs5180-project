@@ -32,6 +32,13 @@ datarequest = {
         "use_mc": True,
         "batch_size": None
     },
+    "Todd": {
+        "test_names": [],
+            # "test0", 
+            #            "test472",],
+        "use_mc": True,
+        "batch_size": None
+    },
     # "Larry": {
     #     "test_names": ["test0", 
     #                 #    "test642", 

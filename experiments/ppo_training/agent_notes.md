@@ -12,4 +12,6 @@ Larry - Long MC GAE MB PPO, normalized, smooth, smaller network -> constant
 *John* - James with no exploration bonus
 *Jim* - Paul with no exploration bonus (so no normalization)
 **Jeremy** - Fred but GAE (finally fixed shape bug....)
-
+Rod - Jeremy but with shorter truncation limit -> collapsed to wait
+Todd - Jeremy with extra reward shaping and shorter truncation limit. -> collapsed to wait
+Ned - Todd with higher entropy bonus (0.07)
