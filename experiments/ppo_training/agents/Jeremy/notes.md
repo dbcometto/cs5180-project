@@ -7,6 +7,9 @@ On gaming laptop:
 On main laptop:
 56064.2s to 472
 
+On gaming laptop:
+about +24hrs
+
 
 ## Setup:
 
