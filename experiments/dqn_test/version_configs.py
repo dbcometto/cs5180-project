@@ -43,6 +43,24 @@ VERSION_CONFIGS = {
         },
         "rewards": {"REWARD_STEP": -0.1},
     },
+    "v8": {
+        "desc": "Random maps, prioritized replay w/ END boost, extra WAIT penalty, 250K steps",
+        "env_args": {
+            "step_limit": 200,
+            "use_fixed_map": False,
+            "enable_extra_channels": True,
+            "do_smooth_complete_reward": True,
+            "discourage_early_end": True,
+            "do_reward_tree_complete": True,
+        },
+        "rewards": {
+            "REWARD_STEP": -0.15,
+            "REWARD_SCAN": -0.2,
+            "REWARD_NEW_FACE": 2.5,
+            "REWARD_EXPLORE_TILE": 0.3,
+            "REWARD_TREE_COMPLETE": 3.0,
+        },
+    },
     "v7": {
         "desc": "Boosted scan rewards on random maps — agent over-scans, END suppressed",
         "env_args": {
@@ -76,7 +94,7 @@ def makeEnv(version, force_fixed_map=False):
     if force_fixed_map:
         envArgs["use_fixed_map"] = True
 
-    env = TreeWorld(render_mode=None, obs_as_tensor=True, **envArgs)
+    env = TreeWorld(render_mode="human", obs_as_tensor=True, **envArgs)
     for key, value in cfg["rewards"].items():
         setattr(env, key, value)
     return env

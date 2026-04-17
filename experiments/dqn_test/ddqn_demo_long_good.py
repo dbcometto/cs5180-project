@@ -16,14 +16,14 @@ from version_configs import makeEnv
 
 
 # Config
-version='v5'
-friend_name = "ddqn_v5"
+version='v8'
+friend_name = "ddqn_v8"
 start_seed= 2102 # 2027 is classic, 2030 is good, 2031 is really good
 demos = 10000
 
 
 # Setup
-agents_folderpath = "C:\\workspace\\cs5180-project\\experiments\\dqn_test\\agents"
+agents_folderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 # friend = Agent.load_from_checkpoint(friend_folderpath,10727)

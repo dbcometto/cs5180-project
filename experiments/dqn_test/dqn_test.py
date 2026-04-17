@@ -9,7 +9,7 @@ from version_configs import makeEnv, versionDescription
 agentsFolderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
 
 # change this to swap which version to test
-version = "v7"
+version = "v8"
 
 print(f"\nTesting {version.upper()} — {versionDescription(version)}\n")
 

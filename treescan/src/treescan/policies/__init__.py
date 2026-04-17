@@ -10,3 +10,4 @@ from .ppo_gae_mb import DiscretePPOGAEMB
 from .a2c import DiscreteAdvantageActorCritic
 from .dqn import DiscreteDQN
 from .ddqn import DiscreteDoubleDQN
+from .dqn_per import DiscreteDQNPrioritized, DiscreteDoubleDQNPrioritized, PrioritizedReplayBuffer
