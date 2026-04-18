@@ -10,6 +10,7 @@ On main laptop:
 On gaming laptop:
 about +24hrs
 102870.0s to 1765
+=> 68.8 hours
 
 
 ## Setup:

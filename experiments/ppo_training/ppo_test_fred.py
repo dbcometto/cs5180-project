@@ -17,7 +17,7 @@ start = time.time()
 
 # Config
 friend_name = "Jeremy"
-test_name = "test1054"
+test_name = "test1765"
 
 step_limit = 999
 gamma = 0.99

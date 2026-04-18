@@ -26,7 +26,7 @@ Gaming laptop:
 Main laptop:
 47233.8s to 17667
 
-
+Total: 121.8 hours
 
 
 ## Info:

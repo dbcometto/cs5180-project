@@ -26,15 +26,16 @@ datarequest = {
                        "test17667",],
         "use_mc": False,
         "batch_size": 32,
-        "label": "MC PPO"
+        "label": "V1: MC PPO"
     },
     "Jeremy": {
         "test_names": ["test0", 
                     #    "test472",
-                       "test1054",],
+                    #    "test1054",
+                       "test1765",],
         "use_mc": True,
         "batch_size": 32,
-        "label": "GAE PPO"
+        "label": "V2: GAE PPO"
     },
     "Rod": {
         "test_names": [],
@@ -42,7 +43,7 @@ datarequest = {
             #            "test472",],
         "use_mc": True,
         "batch_size": 32,
-        "label": "GAE PPO with Shorter Truncation"
+        "label": "V3: GAE PPO with Shorter Truncation"
     },
     "Todd": {
         "test_names": [],
@@ -50,14 +51,14 @@ datarequest = {
             #            "test472",],
         "use_mc": True,
         "batch_size": 32,
-        "label": "GAE PPO with Shorter Truncation and Smoothed Reward"
+        "label": "V4: GAE PPO with Shorter Truncation and Smoothed Reward"
     },
     "Ned": {
         "test_names": ["test0", 
                        "test1356",],
         "use_mc": True,
         "batch_size": 32,
-        "label": "GAE PPO with Smoothed Reward, Shorter Truncation, and Increased Entropy"
+        "label": "V5: GAE PPO with Smoothed Reward, Shorter Truncation, and Increased Entropy"
     },
     # "Larry": {
     #     "test_names": ["test0", 
