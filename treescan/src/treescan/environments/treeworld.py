@@ -28,6 +28,7 @@ class TreeWorld(gym.Env):
     TEXT_COLOR = "#131111"
     SCAN_COLOR = "#FF5100"
     END_COLOR = "#FFFDF4"
+    WAIT_COLOR = "#DA7211"
 
     PANEL_SEPARATION = 15
     TEXT_PAD = 70
@@ -957,6 +958,24 @@ class TreeWorld(gym.Env):
                             pygame.Rect(
                                 np.array([self.info_width_start + self.END_SQUARE_PERCENT*self.pix_square_size,0+self.END_SQUARE_PERCENT*self.pix_square_size]) + self.pix_square_size * self._agent_location[::-1],
                                 (self.END_SQUARE_PERCENT*self.pix_square_size, self.END_SQUARE_PERCENT*self.pix_square_size),
+                            ),
+                        )
+                
+            if self._last_action == self.ACTIONS.WAIT:
+                pygame.draw.rect(
+                            canvas,
+                            self.WAIT_COLOR,
+                            pygame.Rect(
+                                np.array([self.info_width_start + 0.2*self.pix_square_size, 0+0.2*self.pix_square_size]) + self.pix_square_size * self._agent_location[::-1],
+                                (0.2*self.pix_square_size, 0.6*self.pix_square_size),
+                            ),
+                        )
+                pygame.draw.rect(
+                            canvas,
+                            self.WAIT_COLOR,
+                            pygame.Rect(
+                                np.array([self.info_width_start + 0.6*self.pix_square_size, 0+0.2*self.pix_square_size]) + self.pix_square_size * self._agent_location[::-1],
+                                (0.2*self.pix_square_size, 0.6*self.pix_square_size),
                             ),
                         )
 

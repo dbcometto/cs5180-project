@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 
 # Config
-friend_name = "Ned"
+friend_name = "Jeremy"
 start_seed= 2101 # 2027 is classic, 2030 is good, 2031 is really good
 demos = 1000
 
@@ -25,8 +25,8 @@ agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 # friend = Agent.load_from_checkpoint(friend_folderpath,10727)
-demo_env = TreeWorld(render_mode="human",step_limit=199,obs_as_tensor=True, use_fixed_map=False, do_expand_rendering=True, render_label=friend_name)
-demo_env.metadata["render_fps"]=8
+demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=False, do_expand_rendering=True, render_label=friend_name)
+demo_env.metadata["render_fps"]=32
 
 
 # Loop
