@@ -16,10 +16,12 @@ import os
 # Config
 do_plot_individual = False
 main_folderpath = "C:\\workspace\\cs5180-project\\experiments"
+is_test_discounted = False
+base_test = "final_test_rtg"
 datarequest = {
     "Fred": {
         "folder": "ppo_training",
-        "test_names": ["final_test"],
+        "test_names": [base_test],
         "use_mc": False,
         "batch_size": None,
         "plot_loss": True,
@@ -28,51 +30,78 @@ datarequest = {
     },
     "Jeremy": {
         "folder": "ppo_training",
-        "test_names": ["final_test"],
+        "test_names": [base_test],
         "use_mc": True,
         "batch_size": None,
         "plot_loss": True,
-        "color": "darkorange",
+        "color": "orangered",
         "label": "GAE PPO",
     },
+    # "Rod": {
+    #     "folder": "ppo_training",
+    #     "test_names": [],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "plot_loss": True,
+    #     "color": "darkorange",
+    #     "label": "GAE V3",
+    # },
+    # "Todd": {
+    #     "folder": "ppo_training",
+    #     "test_names": [],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "plot_loss": True,
+    #     "color": "limegreen",
+    #     "label": "GAE V4",
+    # },
+    # "Ned": {
+    #     "folder": "ppo_training",
+    #     "test_names": [],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "plot_loss": True,
+    #     "color": "dodgerblue",
+    #     "label": "GAE V5",
+    # },
     "dqn_v5": {
         "folder": "dqn_test",
-        "test_names": ["final_test"],
+        "test_names": [base_test],
         "use_mc": False,
         "batch_size": None,
         "plot_loss": False,
         "color": "forestgreen",
-        "label": "DQN (v5)",
+        "label": "DQN (V5)",
     },
     "ddqn_v5": {
         "folder": "dqn_test",
-        "test_names": ["final_test"],
+        "test_names": [base_test],
         "use_mc": False,
         "batch_size": None,
         "plot_loss": False,
-        "color": "darkturquoise",
-        "label": "DDQN (v5)",
+        "color": "cyan",
+        "label": "DDQN (V5)",
     },
     "dqn_v8": {
         "folder": "dqn_test",
-        "test_names": ["final_test"],
+        "test_names": [base_test],
         "use_mc": False,
         "batch_size": None,
         "plot_loss": False,
         "color": "magenta",
-        "label": "DQN (v8)",
+        "label": "DQN (V8)",
     },
     "ddqn_v8": {
         "folder": "dqn_test",
-        "test_names": ["final_test"],
+        "test_names": [base_test],
         "use_mc": False,
         "batch_size": None,
         "plot_loss": False,
-        "color": "slategrey",
-        "label": "DDQN (v8)",
+        "color": "lime",
+        "label": "DDQN (V8)",
     },
 }
-alpha = 0.05
+alpha = 0.2
 num_episodes = 10
 
 
@@ -187,6 +216,7 @@ for friend_name, data in datarequest.items():
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
         fullmean = np.mean(metric)
+        print(f"Percent Explored: {label}, {fullmean}")
 
         main_axs[0,2].plot(avg,label=f"{label}",color=color)
         main_axs[0,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
@@ -197,6 +227,7 @@ for friend_name, data in datarequest.items():
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
         fullmean = np.mean(metric)
+        print(f"Percent Complete: {label}, {fullmean}")
 
         main_axs[1,2].plot(avg,label=f"{label}",color=color)
         main_axs[1,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
@@ -207,6 +238,7 @@ for friend_name, data in datarequest.items():
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
         fullmean = np.mean(metric)
+        print(f"Dist from Start: {label}, {fullmean}")
 
         main_axs[0,3].plot(avg,label=f"{label}",color=color)
         main_axs[0,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
@@ -217,6 +249,7 @@ for friend_name, data in datarequest.items():
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
         fullmean = np.mean(metric)
+        print(f"Count Scans: {label}, {fullmean}")
 
         main_axs[1,3].plot(avg,label=f"{label}",color=color)
         main_axs[1,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
@@ -268,50 +301,57 @@ for friend_name, data in datarequest.items():
 
 main_axs[0,0].set_title("Training Results (Returns)")
 main_axs[0,0].set_xlabel("Episode")
-main_axs[0,0].set_ylabel("Return")
+# main_axs[0,0].set_xlabel("Batch")
+main_axs[0,0].set_ylabel("Discounted Total Return")
+# main_axs[0,0].set_ylabel("Average Return")
 main_axs[0,0].grid(True)
-main_axs[0,0].legend(loc='lower right')
+main_axs[0,0].legend(loc='upper right')
 
 main_axs[1,0].set_title("Training Results (Lengths)")
 main_axs[1,0].set_xlabel("Episode")
+# main_axs[1,0].set_xlabel("Batch")
 main_axs[1,0].set_ylabel("Steps per Episode")
+# main_axs[1,0].set_ylabel("Average Steps per Episode")
 main_axs[1,0].grid(True)
 # main_axs[0,1].legend(loc='lower right')
 main_axs[1,0].legend(loc='upper right')
 
 main_axs[0,1].set_title("Testing Results (Returns)")
 main_axs[0,1].set_xlabel("Episodes")
-main_axs[0,1].set_ylabel("Return")
+if not is_test_discounted:
+    main_axs[0,1].set_ylabel("Total Reward-to-Go")
+else:
+    main_axs[0,1].set_ylabel("Discounted Total Return")
 main_axs[0,1].grid(True)
 main_axs[0,1].legend(loc='lower left')
 
 main_axs[1,1].set_title("Testing Results (Lengths)")
-main_axs[1,1].set_xlabel("Episodes")
+main_axs[1,1].set_xlabel("Episode")
 main_axs[1,1].set_ylabel("Steps per Episode")
 main_axs[1,1].grid(True)
 main_axs[1,1].legend(loc='upper left')
 
 main_axs[0,2].set_title("Testing Results (Percent Explored)")
-main_axs[0,2].set_xlabel("Episodes")
+main_axs[0,2].set_xlabel("Episode")
 main_axs[0,2].set_ylabel("Percent")
 main_axs[0,2].grid(True)
 main_axs[0,2].legend(loc='upper left')
 
 main_axs[1,2].set_title("Testing Results (Percent Complete)")
-main_axs[1,2].set_xlabel("Episodes")
+main_axs[1,2].set_xlabel("Episode")
 main_axs[1,2].set_ylabel("Percent")
 main_axs[1,2].grid(True)
 main_axs[1,2].legend(loc='upper left')
 
 main_axs[0,3].set_title("Testing Results (Final Distance from Start)")
-main_axs[0,3].set_xlabel("Episodes")
+main_axs[0,3].set_xlabel("Episode")
 main_axs[0,3].set_ylabel("Distance")
 main_axs[0,3].grid(True)
 main_axs[0,3].legend(loc='upper left')
 
 main_axs[1,3].set_title("Testing Results (Number of Scans)")
-main_axs[1,3].set_xlabel("Count")
-main_axs[1,3].set_ylabel("Percent")
+main_axs[1,3].set_xlabel("Episode")
+main_axs[1,3].set_ylabel("Count")
 main_axs[1,3].grid(True)
 main_axs[1,3].legend(loc='upper left')
 main_axs[1,3].set_ylim([-5,60])

@@ -23,7 +23,7 @@ start = time.time()
 episodes = 10
 runs = 4
 start_seed = 2025
-test_name = "final_test"
+test_name = "final_test_rtg"
 folderpath = "C:\\workspace\\cs5180-project\\experiments"
 
 
@@ -37,7 +37,7 @@ do_smooth_complete_reward = False
 do_smooth_end_dist = False
 do_gate_ending = False
 do_reward_tree_complete = False
-gamma = 0.99 # this is probably best, could compare with the other as well
+gamma = 1.0 # Compare with reward-to-go
 
 datarequest = {
     "Fred": {
