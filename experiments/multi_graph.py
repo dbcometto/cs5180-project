@@ -71,7 +71,7 @@ datarequest = {
         "batch_size": None,
         "plot_loss": False,
         "color": "forestgreen",
-        "label": "DQN (V5)",
+        "label": "DQN-V5",
     },
     "ddqn_v5": {
         "folder": "dqn_test",
@@ -79,8 +79,8 @@ datarequest = {
         "use_mc": False,
         "batch_size": None,
         "plot_loss": False,
-        "color": "cyan",
-        "label": "DDQN (V5)",
+        "color": "turquoise",
+        "label": "DDQN-V5",
     },
     "dqn_v8": {
         "folder": "dqn_test",
@@ -89,7 +89,7 @@ datarequest = {
         "batch_size": None,
         "plot_loss": False,
         "color": "magenta",
-        "label": "DQN (V8)",
+        "label": "DQN-V8",
     },
     "ddqn_v8": {
         "folder": "dqn_test",
@@ -97,8 +97,8 @@ datarequest = {
         "use_mc": False,
         "batch_size": None,
         "plot_loss": False,
-        "color": "lime",
-        "label": "DDQN (V8)",
+        "color": "limegreen",
+        "label": "DDQN-V8",
     },
 }
 alpha = 0.2
@@ -124,6 +124,14 @@ def rolling_avg(arr, window=40):
 main_fig,main_axs = plt.subplots(2,4,figsize=(21,8))
 main_fig.suptitle(f"Agent Performance")
 
+agent_results = {
+    "returns": {},
+    "lengths": {},
+    "percent_explored": {},
+    "percent_complete": {},
+    "dist_from_start": {},
+    "count_scans": {}
+}
 for friend_name, data in datarequest.items():
     folder = data["folder"]
     test_names = data["test_names"]
@@ -190,19 +198,24 @@ for friend_name, data in datarequest.items():
 
         friend_test_return_avg = np.mean(np.array(friend_test["episode_returns"]),axis=0)
         friend_test_return_std = np.std(np.array(friend_test["episode_returns"]),axis=0)
-        fullmean_return = np.mean(friend_test["episode_returns"])
+        fullmean_return = np.median(friend_test["episode_returns"])
+        agent_results["returns"][friend_name] = np.array(friend_test["episode_returns"])
+        print(f"Returns: {label}, {fullmean_return}")
 
         friend_test_length_avg = np.mean(np.array(friend_test["episode_lengths"]),axis=0)
         friend_test_length_std = np.std(np.array(friend_test["episode_lengths"]),axis=0)
-        fullmean_lengths = np.mean(friend_test["episode_lengths"])
+        fullmean_lengths = np.median(friend_test["episode_lengths"])
+        agent_results["lengths"][friend_name] = np.array(friend_test["episode_lengths"])
+        
+        print(f"Lengths: {label}, {fullmean_lengths}")
 
-        main_axs[0,1].plot(friend_test_return_avg,label=f"{label}",color=color)
-        main_axs[0,1].plot([0, num_episodes],[fullmean_return,fullmean_return],color=color,linestyle='--')
-        main_axs[0,1].fill_between(range(friend_test_return_avg.shape[0]),friend_test_return_avg-friend_test_return_std,friend_test_return_avg+friend_test_return_std,color=color,alpha=alpha)
+        # main_axs[0,1].plot(friend_test_return_avg,label=f"{label}",color=color)
+        # main_axs[0,1].plot([0, num_episodes],[fullmean_return,fullmean_return],color=color,linestyle='--')
+        # main_axs[0,1].fill_between(range(friend_test_return_avg.shape[0]),friend_test_return_avg-friend_test_return_std,friend_test_return_avg+friend_test_return_std,color=color,alpha=alpha)
 
-        main_axs[1,1].plot(friend_test_length_avg,label=f"{label}",color=color)
-        main_axs[1,1].plot([0, num_episodes],[fullmean_lengths,fullmean_lengths],color=color,linestyle='--')
-        main_axs[1,1].fill_between(range(friend_test_length_avg.shape[0]),friend_test_length_avg-friend_test_length_std,friend_test_length_avg+friend_test_length_std,color=color,alpha=alpha)
+        # main_axs[1,1].plot(friend_test_length_avg,label=f"{label}",color=color)
+        # main_axs[1,1].plot([0, num_episodes],[fullmean_lengths,fullmean_lengths],color=color,linestyle='--')
+        # main_axs[1,1].fill_between(range(friend_test_length_avg.shape[0]),friend_test_length_avg-friend_test_length_std,friend_test_length_avg+friend_test_length_std,color=color,alpha=alpha)
 
         if do_plot_individual:
             axs[0,1].plot(friend_test_return_avg,label=f"{test_name}: Mean")
@@ -215,45 +228,49 @@ for friend_name, data in datarequest.items():
         metric = 100*np.array([[d["percent_explored"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
-        fullmean = np.mean(metric)
+        fullmean = np.median(metric)
         print(f"Percent Explored: {label}, {fullmean}")
+        agent_results["percent_explored"][friend_name] = metric
 
-        main_axs[0,2].plot(avg,label=f"{label}",color=color)
-        main_axs[0,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
-        main_axs[0,2].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
+        # main_axs[0,2].plot(avg,label=f"{label}",color=color)
+        # main_axs[0,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
+        # main_axs[0,2].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
 
         # Percent Complete
         metric = 100*np.array([[d["percent_complete"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
-        fullmean = np.mean(metric)
+        fullmean = np.median(metric)
         print(f"Percent Complete: {label}, {fullmean}")
+        agent_results["percent_complete"][friend_name] = metric
 
-        main_axs[1,2].plot(avg,label=f"{label}",color=color)
-        main_axs[1,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
-        main_axs[1,2].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
+        # main_axs[1,2].plot(avg,label=f"{label}",color=color)
+        # main_axs[1,2].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
+        # main_axs[1,2].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
 
         # Final Distance
         metric = np.array([[d["dist_from_start"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
-        fullmean = np.mean(metric)
+        fullmean = np.median(metric)
         print(f"Dist from Start: {label}, {fullmean}")
+        agent_results["dist_from_start"][friend_name] = metric
 
-        main_axs[0,3].plot(avg,label=f"{label}",color=color)
-        main_axs[0,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
-        main_axs[0,3].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
+        # main_axs[0,3].plot(avg,label=f"{label}",color=color)
+        # main_axs[0,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
+        # main_axs[0,3].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
 
         # Num Scans
         metric = np.array([[d["count_scans"] for d in j] for j in friend_test["last_env_info"]])
         avg = np.mean(np.array(metric),axis=0)
         std_dev = np.std(np.array(metric),axis=0)
-        fullmean = np.mean(metric)
+        fullmean = np.median(metric)
         print(f"Count Scans: {label}, {fullmean}")
+        agent_results["count_scans"][friend_name] = metric
 
-        main_axs[1,3].plot(avg,label=f"{label}",color=color)
-        main_axs[1,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
-        main_axs[1,3].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
+        # main_axs[1,3].plot(avg,label=f"{label}",color=color)
+        # main_axs[1,3].plot([0, num_episodes],[fullmean,fullmean],color=color,linestyle='--')
+        # main_axs[1,3].fill_between(range(avg.shape[0]),avg-std_dev,avg+std_dev,color=color,alpha=alpha)
         
 
 
@@ -316,45 +333,118 @@ main_axs[1,0].grid(True)
 # main_axs[0,1].legend(loc='lower right')
 main_axs[1,0].legend(loc='upper right')
 
-main_axs[0,1].set_title("Testing Results (Returns)")
-main_axs[0,1].set_xlabel("Episodes")
+
+
+vplot = main_axs[0,1].violinplot([v.flatten() for v in agent_results["returns"].values()],showmedians=True)
+for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.values()]):
+    body.set_facecolor(color)
+    body.set_alpha(0.2)
+for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+    vp = vplot[partname]
+    vp.set_colors([agent['color'] for agent in datarequest.values()])
+# main_axs[0,1].set_xlabel("Episode")
+main_axs[0,1].set_xticks(range(1, len(datarequest)+1))
+main_axs[0,1].set_xticklabels([agent['label'] for agent in datarequest.values()])
+main_axs[0,1].set_xlabel("Agent")
 if not is_test_discounted:
-    main_axs[0,1].set_ylabel("Total Reward-to-Go")
+    main_axs[0,1].set_ylabel("Total Accumulated Reward")
 else:
     main_axs[0,1].set_ylabel("Discounted Total Return")
 main_axs[0,1].grid(True)
-main_axs[0,1].legend(loc='lower left')
+# main_axs[0,1].legend(loc='lower left')
+main_axs[0,1].set_ylim([-100,100])
+main_axs[0,1].text(3.3,10,f"Min: {np.min(agent_results["returns"]["ddqn_v5"]):5.1f}",color=datarequest["ddqn_v5"]["color"])
+main_axs[0,1].text(4.3,27,f"Min: {np.min(agent_results["returns"]["dqn_v8"]):5.1f}",color=datarequest["dqn_v8"]["color"])
+main_axs[0,1].text(5.3,44,f"Min: {np.min(agent_results["returns"]["ddqn_v8"]):5.1f}",color=datarequest["ddqn_v8"]["color"])
 
+
+vplot = main_axs[1,1].violinplot([v.flatten() for v in agent_results["lengths"].values()],showmedians=True)
+for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.values()]):
+    body.set_facecolor(color)
+    body.set_alpha(0.2)
+for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+    vp = vplot[partname]
+    vp.set_colors([agent['color'] for agent in datarequest.values()])
 main_axs[1,1].set_title("Testing Results (Lengths)")
-main_axs[1,1].set_xlabel("Episode")
+# main_axs[1,1].set_xlabel("Episode")
+main_axs[1,1].set_xticks(range(1, len(datarequest)+1))
+main_axs[1,1].set_xticklabels([agent['label'] for agent in datarequest.values()])
+main_axs[1,1].set_xlabel("Agent")
 main_axs[1,1].set_ylabel("Steps per Episode")
 main_axs[1,1].grid(True)
-main_axs[1,1].legend(loc='upper left')
+# main_axs[1,1].legend(loc='upper left')
 
+
+vplot = main_axs[0,2].violinplot([v.flatten() for v in agent_results["percent_explored"].values()],showmedians=True)
+for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.values()]):
+    body.set_facecolor(color)
+    body.set_alpha(0.2)
+for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+    vp = vplot[partname]
+    vp.set_colors([agent['color'] for agent in datarequest.values()])
 main_axs[0,2].set_title("Testing Results (Percent Explored)")
-main_axs[0,2].set_xlabel("Episode")
+# main_axs[0,2].set_xlabel("Episode")
+main_axs[0,2].set_xticks(range(1, len(datarequest)+1))
+main_axs[0,2].set_xticklabels([agent['label'] for agent in datarequest.values()])
+main_axs[0,2].set_xlabel("Agent")
 main_axs[0,2].set_ylabel("Percent")
 main_axs[0,2].grid(True)
-main_axs[0,2].legend(loc='upper left')
+# main_axs[0,2].legend(loc='upper left')
 
+
+vplot = main_axs[1,2].violinplot([v.flatten() for v in agent_results["percent_complete"].values()],showmedians=True)
+for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.values()]):
+    body.set_facecolor(color)
+    body.set_alpha(0.2)
+for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+    vp = vplot[partname]
+    vp.set_colors([agent['color'] for agent in datarequest.values()])
 main_axs[1,2].set_title("Testing Results (Percent Complete)")
-main_axs[1,2].set_xlabel("Episode")
+# main_axs[1,2].set_xlabel("Episode")
+main_axs[1,2].set_xticks(range(1, len(datarequest)+1))
+main_axs[1,2].set_xticklabels([agent['label'] for agent in datarequest.values()])
+main_axs[1,2].set_xlabel("Agent")
 main_axs[1,2].set_ylabel("Percent")
 main_axs[1,2].grid(True)
-main_axs[1,2].legend(loc='upper left')
+# main_axs[1,2].legend(loc='upper left')
 
+
+vplot = main_axs[0,3].violinplot([v.flatten() for v in agent_results["dist_from_start"].values()],showmedians=True)
+for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.values()]):
+    body.set_facecolor(color)
+    body.set_alpha(0.2)
+for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+    vp = vplot[partname]
+    vp.set_colors([agent['color'] for agent in datarequest.values()])
 main_axs[0,3].set_title("Testing Results (Final Distance from Start)")
-main_axs[0,3].set_xlabel("Episode")
+# main_axs[0,3].set_xlabel("Episode")
+main_axs[0,3].set_xticks(range(1, len(datarequest)+1))
+main_axs[0,3].set_xticklabels([agent['label'] for agent in datarequest.values()])
+main_axs[0,3].set_xlabel("Agent")
 main_axs[0,3].set_ylabel("Distance")
 main_axs[0,3].grid(True)
-main_axs[0,3].legend(loc='upper left')
+# main_axs[0,3].legend(loc='upper left')
 
+
+vplot = main_axs[1,3].violinplot([v.flatten() for v in agent_results["count_scans"].values()],showmedians=True)
+for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.values()]):
+    body.set_facecolor(color)
+    body.set_alpha(0.2)
+for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
+    vp = vplot[partname]
+    vp.set_colors([agent['color'] for agent in datarequest.values()])
 main_axs[1,3].set_title("Testing Results (Number of Scans)")
-main_axs[1,3].set_xlabel("Episode")
+# main_axs[1,3].set_xlabel("Episode")
+main_axs[1,3].set_xticks(range(1, len(datarequest)+1))
+main_axs[1,3].set_xticklabels([agent['label'] for agent in datarequest.values()])
+main_axs[1,3].set_xlabel("Agent")
 main_axs[1,3].set_ylabel("Count")
 main_axs[1,3].grid(True)
-main_axs[1,3].legend(loc='upper left')
-main_axs[1,3].set_ylim([-5,60])
+# main_axs[1,3].legend(loc='upper left')
+main_axs[1,3].set_ylim([-5,100])
+main_axs[1,3].text(3.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v5"])}",color=datarequest["ddqn_v5"]["color"])
+main_axs[1,3].text(4.5,90,f"Max: {np.max(agent_results["count_scans"]["dqn_v8"])}",color=datarequest["dqn_v8"]["color"])
+main_axs[1,3].text(5.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v8"])}",color=datarequest["ddqn_v8"]["color"])
 
 main_fig.tight_layout()
 

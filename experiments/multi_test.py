@@ -27,8 +27,8 @@ test_name = "final_test_rtg"
 folderpath = "C:\\workspace\\cs5180-project\\experiments"
 
 
-# World - Standard Reward for Comparison (with somewhat reduced truncation limit)
-step_limit = 499
+# World - Standard Reward for Comparison
+step_limit = 999
 do_extra_info = True
 use_fixed_map = False
 enable_extra_channels = True
