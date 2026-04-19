@@ -23,7 +23,7 @@ datarequest = {
         "folder": "ppo_training",
         "test_names": [base_test],
         "use_mc": False,
-        "batch_size": None,
+        "batch_size": 32,
         "plot_loss": True,
         "color": "maroon",
         "label": "MC PPO",
@@ -32,7 +32,7 @@ datarequest = {
         "folder": "ppo_training",
         "test_names": [base_test],
         "use_mc": True,
-        "batch_size": None,
+        "batch_size": 32,
         "plot_loss": True,
         "color": "orangered",
         "label": "GAE PPO",
@@ -162,11 +162,11 @@ for friend_name, data in datarequest.items():
         training_results = training_results[:last_batch*batch_size].reshape(-1, batch_size).mean(axis=1)
         training_lengths = training_lengths[:last_batch*batch_size].reshape(-1, batch_size).mean(axis=1)
 
-    main_axs[0,0].plot(training_results,alpha=alpha,color=color)
-    main_axs[0,0].plot(rolling_avg(training_results),label=f"{label}",color=color)
+    main_axs[0,0].plot(training_results,alpha=alpha,color=color,zorder=2.02)
+    main_axs[0,0].plot(rolling_avg(training_results),label=f"{label}",color=color,zorder=2.03)
 
-    main_axs[1,0].plot(training_lengths,alpha=alpha,color=color)
-    main_axs[1,0].plot(rolling_avg(training_lengths),label=f"{label}",color=color)
+    main_axs[1,0].plot(training_lengths,alpha=alpha,color=color,zorder=2.02)
+    main_axs[1,0].plot(rolling_avg(training_lengths),label=f"{label}",color=color,zorder=2.03)
 
     if do_plot_individual:
         axs[0,0].plot(training_results,label="Returns",alpha=0.4)
@@ -317,21 +317,23 @@ for friend_name, data in datarequest.items():
 
 
 main_axs[0,0].set_title("Training Results (Returns)")
-main_axs[0,0].set_xlabel("Episode")
+# main_axs[0,0].set_xlabel("Episode")
 # main_axs[0,0].set_xlabel("Batch")
+main_axs[0,0].set_xlabel("Training Step (Batch or Episode)")
 main_axs[0,0].set_ylabel("Discounted Total Return")
 # main_axs[0,0].set_ylabel("Average Return")
 main_axs[0,0].grid(True)
-main_axs[0,0].legend(loc='upper right')
+main_axs[0,0].legend(loc='upper right',fontsize="small")
 
 main_axs[1,0].set_title("Training Results (Lengths)")
-main_axs[1,0].set_xlabel("Episode")
+# main_axs[1,0].set_xlabel("Episode")
 # main_axs[1,0].set_xlabel("Batch")
+main_axs[1,0].set_xlabel("Training Step (Batch or Episode)")
 main_axs[1,0].set_ylabel("Steps per Episode")
 # main_axs[1,0].set_ylabel("Average Steps per Episode")
 main_axs[1,0].grid(True)
 # main_axs[0,1].legend(loc='lower right')
-main_axs[1,0].legend(loc='upper right')
+main_axs[1,0].legend(loc='upper right',fontsize="small")
 
 
 
@@ -342,7 +344,7 @@ for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.v
 for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
     vp = vplot[partname]
     vp.set_colors([agent['color'] for agent in datarequest.values()])
-# main_axs[0,1].set_xlabel("Episode")
+main_axs[0,1].set_title("Testing Results (Returns)")
 main_axs[0,1].set_xticks(range(1, len(datarequest)+1))
 main_axs[0,1].set_xticklabels([agent['label'] for agent in datarequest.values()])
 main_axs[0,1].set_xlabel("Agent")
@@ -356,6 +358,8 @@ main_axs[0,1].set_ylim([-100,100])
 main_axs[0,1].text(3.3,10,f"Min: {np.min(agent_results["returns"]["ddqn_v5"]):5.1f}",color=datarequest["ddqn_v5"]["color"])
 main_axs[0,1].text(4.3,27,f"Min: {np.min(agent_results["returns"]["dqn_v8"]):5.1f}",color=datarequest["dqn_v8"]["color"])
 main_axs[0,1].text(5.3,44,f"Min: {np.min(agent_results["returns"]["ddqn_v8"]):5.1f}",color=datarequest["ddqn_v8"]["color"])
+main_axs[0,1].plot([0.8,6.2],[76.7,76.7],color="black",linestyle="--")
+main_axs[0,1].text(0.9,79,"Perfect Score", color="black")
 
 
 vplot = main_axs[1,1].violinplot([v.flatten() for v in agent_results["lengths"].values()],showmedians=True)
@@ -399,7 +403,7 @@ for body,color in zip(vplot['bodies'],[agent['color'] for agent in datarequest.v
 for partname in ('cbars', 'cmins', 'cmaxes', 'cmedians'):
     vp = vplot[partname]
     vp.set_colors([agent['color'] for agent in datarequest.values()])
-main_axs[1,2].set_title("Testing Results (Percent Complete)")
+main_axs[1,2].set_title("Testing Results (Percent Tree Faces Scanned)")
 # main_axs[1,2].set_xlabel("Episode")
 main_axs[1,2].set_xticks(range(1, len(datarequest)+1))
 main_axs[1,2].set_xticklabels([agent['label'] for agent in datarequest.values()])
@@ -442,6 +446,7 @@ main_axs[1,3].set_ylabel("Count")
 main_axs[1,3].grid(True)
 # main_axs[1,3].legend(loc='upper left')
 main_axs[1,3].set_ylim([-5,100])
+main_axs[1,3].text(0.5,90,f"Max: {np.max(agent_results["count_scans"]["Fred"])}",color=datarequest["Fred"]["color"])
 main_axs[1,3].text(3.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v5"])}",color=datarequest["ddqn_v5"]["color"])
 main_axs[1,3].text(4.5,90,f"Max: {np.max(agent_results["count_scans"]["dqn_v8"])}",color=datarequest["dqn_v8"]["color"])
 main_axs[1,3].text(5.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v8"])}",color=datarequest["ddqn_v8"]["color"])
