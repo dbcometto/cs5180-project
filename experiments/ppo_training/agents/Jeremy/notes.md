@@ -13,6 +13,7 @@ about +24hrs
 => 68.8 hours
 58231.7s to 3169
 80950.8s to 7389
+=> 107.5 hours
 
 7290.6s
 ## Setup:

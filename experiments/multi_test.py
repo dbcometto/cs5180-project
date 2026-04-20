@@ -20,10 +20,10 @@ start = time.time()
 
 
 # Config
-episodes = 10
-runs = 4
+episodes = 25
+runs = 10
 start_seed = 2025
-test_name = "final_test_rtg"
+test_name = "final_test_rtg_250"
 folderpath = "C:\\workspace\\cs5180-project\\experiments"
 
 
@@ -50,7 +50,7 @@ datarequest = {
         "folder": "ppo_training",
         "enable_extra_channels": False,
         "enable_extra_dist_channel": False,
-        "checkpoint": None,
+        "checkpoint": 7000,
     },
     "dqn_v5": {
         "folder": "dqn_test",

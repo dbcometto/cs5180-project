@@ -35,7 +35,8 @@ datarequest = {
                        "test1765",],
         "use_mc": True,
         "batch_size": 32,
-        "label": "V2: GAE PPO"
+        "label": "V2: GAE PPO",
+        "checkpoint": 7000
     },
     "Rod": {
         "test_names": [],
@@ -120,8 +121,17 @@ for friend_name, data in datarequest.items():
 
 
     # Training Results
-    training_results = np.array(friend.training_results["training_returns"]) if not use_mc else np.array(friend.training_results["training_mcreturns"])
-    training_lengths = np.array(friend.training_results["training_lengths"])
+
+    try:
+        checkpoint = data["checkpoint"]
+        batch_size = data["batch_size"]
+        if batch_size is not None:
+            checkpoint = batch_size*checkpoint
+    except:
+        checkpoint = -1
+
+    training_results = np.array(friend.training_results["training_returns"][:checkpoint]) if not use_mc else np.array(friend.training_results["training_mcreturns"][:checkpoint])
+    training_lengths = np.array(friend.training_results["training_lengths"][:checkpoint])
 
     batch_size = data["batch_size"]
     if batch_size is not None:
