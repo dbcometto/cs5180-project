@@ -17,7 +17,7 @@ import os
 do_plot_individual = False
 main_folderpath = "C:\\workspace\\cs5180-project\\experiments"
 is_test_discounted = False
-base_test = "final_test_rtg"
+base_test = "final_test_rtg_250"
 datarequest = {
     "Fred": {
         "folder": "ppo_training",
@@ -36,6 +36,7 @@ datarequest = {
         "plot_loss": True,
         "color": "orangered",
         "label": "GAE PPO",
+        "checkpoint": 7000
     },
     # "Rod": {
     #     "folder": "ppo_training",
@@ -151,10 +152,17 @@ for friend_name, data in datarequest.items():
         fig.suptitle(f"Performance | Agent: {label} | Total training steps: {np.sum(friend.training_results["training_lengths"]):,d}")
 
 
+    try:
+        checkpoint = data["checkpoint"]
+        batch_size = data["batch_size"]
+        if batch_size is not None:
+            checkpoint = batch_size*checkpoint
+    except:
+        checkpoint = -1
 
     # Training Results
-    training_results = np.array(friend.training_results["training_returns"]) if not use_mc else np.array(friend.training_results["training_mcreturns"])
-    training_lengths = np.array(friend.training_results["training_lengths"])
+    training_results = np.array(friend.training_results["training_returns"][:checkpoint]) if not use_mc else np.array(friend.training_results["training_mcreturns"][:checkpoint])
+    training_lengths = np.array(friend.training_results["training_lengths"][:checkpoint])
 
     batch_size = data["batch_size"]
     if batch_size is not None:
