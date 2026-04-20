@@ -21,3 +21,27 @@ Agents:
 - *Rod* - Jeremy but with shorter truncation limit -> collapsed to wait
 - *Todd* - Jeremy with extra reward shaping and shorter truncation limit. -> collapsed to wait
 - *Ned* - Todd with higher entropy bonus (0.07) -> collapsed to wait (more slowly)
+
+
+
+
+## Theoretical Max Score:
+10x15xREWARD_EXPLORE_TILE(0.2) = 30
+10x15xREWARD_NEW_3D(0.05) = 7.5
+6x4xREWARD_NEW_FACE(0.8) = 19.2
+REWARD_COMPLETE(20) = 20
+= 76.7
+(excepting step and scan penalties)
+
+
+Realistically,
+60xREWARD_STEP(-0.05) = -3
+12xREWARD_SCAN(-0.7) = -8.4
+= 68.3
+
+### Other Reward Params
+REWARD_FAIL = -20
+REWARD_FAR_END = -5
+REWARD_PERCENT_MAX = 10
+REWARD_MAX_EARLY_END = -10
+REWARD_INVALID_END = -0.5
