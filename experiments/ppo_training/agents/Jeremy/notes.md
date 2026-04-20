@@ -11,7 +11,8 @@ On gaming laptop:
 about +24hrs
 102870.0s to 1765
 => 68.8 hours
-58231.7s
+58231.7s to 3169
+80950.8s to 7389
 
 
 ## Setup:
