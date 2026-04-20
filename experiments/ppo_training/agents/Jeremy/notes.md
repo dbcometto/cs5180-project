@@ -14,7 +14,7 @@ about +24hrs
 58231.7s to 3169
 80950.8s to 7389
 
-
+7290.6s
 ## Setup:
 
 train_env = TreeWorld(render_mode=None, step_limit=999, obs_as_tensor=True, use_fixed_map=False)
