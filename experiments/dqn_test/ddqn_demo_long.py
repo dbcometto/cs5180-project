@@ -26,12 +26,15 @@ demos = 100
 
 
 # Setup
-agents_folderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
+# agents_folderpath = "/Users/adamlewis/Desktop/Northeastern/Reinforcement Learning/Project/cs5180-project/experiments/dqn_test/agents"
+agents_folderpath = "C:\\workspace\\cs5180-project\\experiments\\dqn_test\\agents"
 friend_folderpath = f"{agents_folderpath}/{friend_name}"
 friend = Agent.load(friend_folderpath)
 # friend = Agent.load_from_checkpoint(friend_folderpath,10727)
 demo_env = makeEnv(version)
-demo_env.metadata["render_fps"]=8
+demo_env.metadata["render_fps"]=32
+demo_env.do_expand_rendering = True
+demo_env.render_label = "DDQN V8"
 
 
 # Loop

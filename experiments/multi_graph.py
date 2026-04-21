@@ -17,7 +17,7 @@ import os
 do_plot_individual = False
 main_folderpath = "C:\\workspace\\cs5180-project\\experiments"
 is_test_discounted = False
-base_test = "final_test_rtg_250"
+base_test = "final_test_rtg_1000"
 datarequest = {
     "Fred": {
         "folder": "ppo_training",
@@ -36,7 +36,7 @@ datarequest = {
         "plot_loss": True,
         "color": "orangered",
         "label": "GAE PPO",
-        "checkpoint": 7000
+        # "checkpoint": 7000
     },
     # "Rod": {
     #     "folder": "ppo_training",
@@ -363,9 +363,15 @@ else:
 main_axs[0,1].grid(True)
 # main_axs[0,1].legend(loc='lower left')
 main_axs[0,1].set_ylim([-100,100])
-main_axs[0,1].text(3.3,10,f"Min: {np.min(agent_results["returns"]["ddqn_v5"]):5.1f}",color=datarequest["ddqn_v5"]["color"])
-main_axs[0,1].text(4.3,27,f"Min: {np.min(agent_results["returns"]["dqn_v8"]):5.1f}",color=datarequest["dqn_v8"]["color"])
-main_axs[0,1].text(5.3,44,f"Min: {np.min(agent_results["returns"]["ddqn_v8"]):5.1f}",color=datarequest["ddqn_v8"]["color"])
+
+# Label clipped values
+main_axs[0,1].text(0.5,-75,"Min", color="black")
+for i,agent in enumerate(datarequest.keys(),start=1):
+    yval = -90 if i % 2 ==0 else -75
+    xval = i-0.4 if i % 2 == 0 else i + 0.4
+    main_axs[0,1].text(xval,yval,f"{np.min(agent_results["returns"][agent]):5.1f}",color=datarequest[agent]["color"],ha='center', va='bottom')
+
+# Label perfect score line
 main_axs[0,1].plot([0.8,6.2],[76.7,76.7],color="black",linestyle="--")
 main_axs[0,1].text(0.9,79,"Perfect Score", color="black")
 
@@ -454,10 +460,18 @@ main_axs[1,3].set_ylabel("Count")
 main_axs[1,3].grid(True)
 # main_axs[1,3].legend(loc='upper left')
 main_axs[1,3].set_ylim([-5,100])
-main_axs[1,3].text(0.5,90,f"Max: {np.max(agent_results["count_scans"]["Fred"])}",color=datarequest["Fred"]["color"])
-main_axs[1,3].text(3.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v5"])}",color=datarequest["ddqn_v5"]["color"])
-main_axs[1,3].text(4.5,90,f"Max: {np.max(agent_results["count_scans"]["dqn_v8"])}",color=datarequest["dqn_v8"]["color"])
-main_axs[1,3].text(5.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v8"])}",color=datarequest["ddqn_v8"]["color"])
+
+# Label clipped values
+main_axs[1,3].text(0.5,90,"Max", color="black")
+for i,agent in enumerate(datarequest.keys(),start=1):
+    yval = 95 if i % 2 ==0 else 85
+    xval = i-0.4 if i % 2 == 0 else i + 0.4
+    main_axs[1,3].text(xval,yval,f"{np.max(agent_results["count_scans"][agent]):d}",color=datarequest[agent]["color"],ha='center', va='top')
+
+# main_axs[1,3].text(0.5,90,f"Max: {np.max(agent_results["count_scans"]["Fred"])}",color=datarequest["Fred"]["color"])
+# main_axs[1,3].text(3.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v5"])}",color=datarequest["ddqn_v5"]["color"])
+# main_axs[1,3].text(4.5,90,f"Max: {np.max(agent_results["count_scans"]["dqn_v8"])}",color=datarequest["dqn_v8"]["color"])
+# main_axs[1,3].text(5.5,90,f"Max: {np.max(agent_results["count_scans"]["ddqn_v8"])}",color=datarequest["ddqn_v8"]["color"])
 
 main_fig.tight_layout()
 

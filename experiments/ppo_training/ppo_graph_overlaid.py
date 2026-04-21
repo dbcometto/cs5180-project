@@ -36,31 +36,31 @@ datarequest = {
         "use_mc": True,
         "batch_size": 32,
         "label": "V2: GAE PPO",
-        "checkpoint": 7000
+        # "checkpoint": 7000
     },
-    "Rod": {
-        "test_names": [],
-            # "test0", 
-            #            "test472",],
-        "use_mc": True,
-        "batch_size": 32,
-        "label": "V3: GAE PPO with Shorter Truncation"
-    },
-    "Todd": {
-        "test_names": [],
-            # "test0", 
-            #            "test472",],
-        "use_mc": True,
-        "batch_size": 32,
-        "label": "V4: GAE PPO with Shorter Truncation and Smoothed Reward"
-    },
-    "Ned": {
-        "test_names": ["test0", 
-                       "test1356",],
-        "use_mc": True,
-        "batch_size": 32,
-        "label": "V5: GAE PPO with Smoothed Reward, Shorter Truncation, and Increased Entropy"
-    },
+    # "Rod": {
+    #     "test_names": [],
+    #         # "test0", 
+    #         #            "test472",],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "label": "V3: GAE PPO with Shorter Truncation"
+    # },
+    # "Todd": {
+    #     "test_names": [],
+    #         # "test0", 
+    #         #            "test472",],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "label": "V4: GAE PPO with Shorter Truncation and Smoothed Reward"
+    # },
+    # "Ned": {
+    #     "test_names": ["test0", 
+    #                    "test1356",],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "label": "V5: GAE PPO with Smoothed Reward, Shorter Truncation, and Increased Entropy"
+    # },
     # "Larry": {
     #     "test_names": ["test0", 
     #                 #    "test642", 

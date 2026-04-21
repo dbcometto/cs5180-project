@@ -14,8 +14,9 @@ about +24hrs
 58231.7s to 3169
 80950.8s to 7389
 => 107.5 hours
-
 7290.6s
+=> 109.5 hours
+
 ## Setup:
 
 train_env = TreeWorld(render_mode=None, step_limit=999, obs_as_tensor=True, use_fixed_map=False)
