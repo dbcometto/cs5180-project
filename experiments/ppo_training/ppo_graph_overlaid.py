@@ -20,19 +20,68 @@ datarequest = {
                     #    "test10727", 
                     #    "test11985", 
                     #    "test12226",
-                       "test13450",],
+                    #    "test13450",
+                    #    "test14102",
+                    #    "test16493",
+                       "test17667",],
         "use_mc": False,
-        "batch_size": 32
+        "batch_size": 32,
+        "label": "V1: MC PPO"
     },
-    "Larry": {
+    "Jeremy": {
         "test_names": ["test0", 
-                    #    "test642", 
-                    #    "test1457", 
-                    #    "test1625",
-                       "test2510",],
+                    #    "test472",
+                    #    "test1054",
+                       "test1765",],
         "use_mc": True,
-        "batch_size": 32
+        "batch_size": 32,
+        "label": "V2: GAE PPO",
+        # "checkpoint": 7000
     },
+    # "Rod": {
+    #     "test_names": [],
+    #         # "test0", 
+    #         #            "test472",],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "label": "V3: GAE PPO with Shorter Truncation"
+    # },
+    # "Todd": {
+    #     "test_names": [],
+    #         # "test0", 
+    #         #            "test472",],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "label": "V4: GAE PPO with Shorter Truncation and Smoothed Reward"
+    # },
+    # "Ned": {
+    #     "test_names": ["test0", 
+    #                    "test1356",],
+    #     "use_mc": True,
+    #     "batch_size": 32,
+    #     "label": "V5: GAE PPO with Smoothed Reward, Shorter Truncation, and Increased Entropy"
+    # },
+    # "Larry": {
+    #     "test_names": ["test0", 
+    #                 #    "test642", 
+    #                 #    "test1457", 
+    #                 #    "test1625",
+    #                    "test2510",],
+    #     "use_mc": True,
+    #     "batch_size": 32
+    # },
+    # "Paul": {
+    #     "test_names": ["test0", 
+    #                    "test15406",],
+    #     "use_mc": True,
+    #     "batch_size": 32
+    # },
+    # "James": {
+    #     "test_names": ["test0", 
+    #                    "test8018",],
+    #     "use_mc": False,
+    #     "batch_size": 32
+    # },
 }
 agents_folderpath = "C:/workspace/cs5180-project/experiments/ppo_training/agents"
 
@@ -58,13 +107,31 @@ for friend_name, data in datarequest.items():
     # friend = Agent.load_from_checkpoint(friend_folderpath,4721)
 
     fig,axs = plt.subplots(2,3,figsize=(20,7.5))
-    fig.suptitle(f"Performance | Agent: {friend_name}")
+
+    try:
+        label = data["label"]
+    except:
+        label = None
+
+    if label is not None:
+        fig.suptitle(f"Performance | {label}")
+    else:
+        fig.suptitle(f"Performance | Agent: {friend_name}")
 
 
 
     # Training Results
-    training_results = np.array(friend.training_results["training_returns"]) if not use_mc else np.array(friend.training_results["training_mcreturns"])
-    training_lengths = np.array(friend.training_results["training_lengths"])
+
+    try:
+        checkpoint = data["checkpoint"]
+        batch_size = data["batch_size"]
+        if batch_size is not None:
+            checkpoint = batch_size*checkpoint
+    except:
+        checkpoint = -1
+
+    training_results = np.array(friend.training_results["training_returns"][:checkpoint]) if not use_mc else np.array(friend.training_results["training_mcreturns"][:checkpoint])
+    training_lengths = np.array(friend.training_results["training_lengths"][:checkpoint])
 
     batch_size = data["batch_size"]
     if batch_size is not None:

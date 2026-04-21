@@ -29,10 +29,10 @@ friend = Agent.load(friend_folderpath)
 # friend = Agent.load_from_checkpoint(friend_folderpath,10727)
 demo_env = makeEnv(version, force_fixed_map=True) 
 # demo_env = TreeWorld(render_mode="human",step_limit=999,obs_as_tensor=True, use_fixed_map=False, do_expand_rendering=True, enable_extra_channels=False, render_label="DQN v6")
-demo_env.metadata["render_fps"]=8
+demo_env.metadata["render_fps"]=32
 demo_env.render_mode ="human"
 demo_env.do_expand_rendering = True
-demo_env.render_label = "DQN"
+demo_env.render_label = "DQN V5 (Fixed Map)"
 
 
 # Loop

@@ -15,12 +15,21 @@
 
 Raw 223490s = 62.080 hr -> 60.5 hrs
 
-53176.7s to 13450 = 14.75 hrs
+53176.7s to 13450 = +14.75 hrs
+9 hrs to 14102
+12014.7s to 14354
+19180.3s to 14812
+
+Gaming laptop:
+56752.1s to 16493
+
+Main laptop:
+47233.8s to 17667
+
+Total: 121.8 hours
 
 
-
-
-Info:
+## Info:
 
 train_env = TreeWorld(render_mode=None, step_limit=999, obs_as_tensor=True, use_fixed_map=False)
 

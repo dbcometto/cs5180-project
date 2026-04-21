@@ -1,0 +1,397 @@
+{
+    "test_name": "final_test_rtg",
+    "episode_lengths": [
+        [
+            798.0,
+            497.0,
+            999.0,
+            441.0,
+            429.0,
+            259.0,
+            462.0,
+            61.0,
+            78.0,
+            399.0
+        ],
+        [
+            179.0,
+            999.0,
+            177.0,
+            27.0,
+            336.0,
+            897.0,
+            515.0,
+            911.0,
+            671.0,
+            727.0
+        ],
+        [
+            897.0,
+            201.0,
+            999.0,
+            185.0,
+            83.0,
+            274.0,
+            198.0,
+            400.0,
+            999.0,
+            999.0
+        ],
+        [
+            958.0,
+            999.0,
+            999.0,
+            9.0,
+            893.0,
+            999.0,
+            999.0,
+            134.0,
+            554.0,
+            861.0
+        ]
+    ],
+    "episode_returns": [
+        [
+            -47.74999999999843,
+            -28.799999999999123,
+            -60.39999999999769,
+            -38.64999999999925,
+            -23.299999999999322,
+            -20.999999999999787,
+            -16.299999999999258,
+            -4.100000000000028,
+            -12.15000000000005,
+            -27.54999999999935
+        ],
+        [
+            -17.600000000000016,
+            -54.29999999999771,
+            -11.700000000000035,
+            -9.800000000000011,
+            -29.59999999999956,
+            -49.19999999999799,
+            -22.250000000000348,
+            -10.400000000000327,
+            -43.59999999999861,
+            -35.349999999998474
+        ],
+        [
+            -52.29999999999803,
+            -15.85000000000008,
+            -58.59999999999774,
+            -16.500000000000117,
+            -16.350000000000048,
+            -9.249999999999764,
+            -18.49999999999996,
+            -35.59999999999972,
+            -141.75000000000742,
+            -56.3999999999977
+        ],
+        [
+            -53.69999999999787,
+            -61.94999999999801,
+            -47.999999999997705,
+            -14.250000000000005,
+            -52.449999999998276,
+            -57.04999999999771,
+            -53.599999999997756,
+            -16.40000000000009,
+            -42.599999999999284,
+            -43.4499999999981
+        ]
+    ],
+    "runs": 4,
+    "episodes": 10,
+    "gamma": 1.0,
+    "start_seed": 2025,
+    "last_env_info": [
+        [
+            {
+                "current_step": 798,
+                "percent_explored": 0.5,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 3.0,
+                "count_scans": 1
+            },
+            {
+                "current_step": 497,
+                "percent_explored": 0.6666666666666666,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 5.830951894845301,
+                "count_scans": 2
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.36,
+                "percent_complete": 0.20833333333333334,
+                "dist_from_start": 2.23606797749979,
+                "count_scans": 2
+            },
+            {
+                "current_step": 441,
+                "percent_explored": 0.28,
+                "percent_complete": 0.0,
+                "dist_from_start": 2.8284271247461903,
+                "count_scans": 0
+            },
+            {
+                "current_step": 429,
+                "percent_explored": 0.7266666666666667,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 8.54400374531753,
+                "count_scans": 1
+            },
+            {
+                "current_step": 259,
+                "percent_explored": 0.5466666666666666,
+                "percent_complete": 0.0,
+                "dist_from_start": 2.8284271247461903,
+                "count_scans": 1
+            },
+            {
+                "current_step": 462,
+                "percent_explored": 0.8266666666666667,
+                "percent_complete": 0.3333333333333333,
+                "dist_from_start": 4.47213595499958,
+                "count_scans": 5
+            },
+            {
+                "current_step": 61,
+                "percent_explored": 0.7266666666666667,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 11.045361017187261,
+                "count_scans": 1
+            },
+            {
+                "current_step": 78,
+                "percent_explored": 0.4866666666666667,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 3.0,
+                "count_scans": 1
+            },
+            {
+                "current_step": 399,
+                "percent_explored": 0.56,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 5.830951894845301,
+                "count_scans": 2
+            }
+        ],
+        [
+            {
+                "current_step": 179,
+                "percent_explored": 0.44666666666666666,
+                "percent_complete": 0.125,
+                "dist_from_start": 4.0,
+                "count_scans": 1
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.52,
+                "percent_complete": 0.3333333333333333,
+                "dist_from_start": 3.1622776601683795,
+                "count_scans": 5
+            },
+            {
+                "current_step": 177,
+                "percent_explored": 0.7,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 9.486832980505138,
+                "count_scans": 1
+            },
+            {
+                "current_step": 27,
+                "percent_explored": 0.5333333333333333,
+                "percent_complete": 0.0,
+                "dist_from_start": 3.605551275463989,
+                "count_scans": 1
+            },
+            {
+                "current_step": 336,
+                "percent_explored": 0.4066666666666667,
+                "percent_complete": 0.0,
+                "dist_from_start": 4.123105625617661,
+                "count_scans": 0
+            },
+            {
+                "current_step": 897,
+                "percent_explored": 0.6133333333333333,
+                "percent_complete": 0.125,
+                "dist_from_start": 7.0710678118654755,
+                "count_scans": 2
+            },
+            {
+                "current_step": 515,
+                "percent_explored": 0.7533333333333333,
+                "percent_complete": 0.3333333333333333,
+                "dist_from_start": 10.198039027185569,
+                "count_scans": 5
+            },
+            {
+                "current_step": 911,
+                "percent_explored": 0.8466666666666667,
+                "percent_complete": 0.5,
+                "dist_from_start": 2.0,
+                "count_scans": 6
+            },
+            {
+                "current_step": 671,
+                "percent_explored": 0.4533333333333333,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 3.1622776601683795,
+                "count_scans": 1
+            },
+            {
+                "current_step": 727,
+                "percent_explored": 0.76,
+                "percent_complete": 0.125,
+                "dist_from_start": 6.324555320336759,
+                "count_scans": 2
+            }
+        ],
+        [
+            {
+                "current_step": 897,
+                "percent_explored": 0.5533333333333333,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 7.0,
+                "count_scans": 2
+            },
+            {
+                "current_step": 201,
+                "percent_explored": 0.5733333333333334,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 7.0,
+                "count_scans": 1
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.43333333333333335,
+                "percent_complete": 0.20833333333333334,
+                "dist_from_start": 3.1622776601683795,
+                "count_scans": 3
+            },
+            {
+                "current_step": 185,
+                "percent_explored": 0.5733333333333334,
+                "percent_complete": 0.0,
+                "dist_from_start": 8.06225774829855,
+                "count_scans": 1
+            },
+            {
+                "current_step": 83,
+                "percent_explored": 0.41333333333333333,
+                "percent_complete": 0.0,
+                "dist_from_start": 4.123105625617661,
+                "count_scans": 1
+            },
+            {
+                "current_step": 274,
+                "percent_explored": 0.74,
+                "percent_complete": 0.3333333333333333,
+                "dist_from_start": 6.082762530298219,
+                "count_scans": 3
+            },
+            {
+                "current_step": 198,
+                "percent_explored": 0.48,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 4.242640687119285,
+                "count_scans": 1
+            },
+            {
+                "current_step": 400,
+                "percent_explored": 0.14666666666666667,
+                "percent_complete": 0.0,
+                "dist_from_start": 0.0,
+                "count_scans": 0
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.7533333333333333,
+                "percent_complete": 0.20833333333333334,
+                "dist_from_start": 7.615773105863909,
+                "count_scans": 138
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.52,
+                "percent_complete": 0.125,
+                "dist_from_start": 3.0,
+                "count_scans": 1
+            }
+        ],
+        [
+            {
+                "current_step": 958,
+                "percent_explored": 0.6266666666666667,
+                "percent_complete": 0.0,
+                "dist_from_start": 3.0,
+                "count_scans": 1
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.26666666666666666,
+                "percent_complete": 0.0,
+                "dist_from_start": 1.0,
+                "count_scans": 0
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.8466666666666667,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 9.848857801796104,
+                "count_scans": 2
+            },
+            {
+                "current_step": 9,
+                "percent_explored": 0.20666666666666667,
+                "percent_complete": 0.0,
+                "dist_from_start": 1.0,
+                "count_scans": 0
+            },
+            {
+                "current_step": 893,
+                "percent_explored": 0.38666666666666666,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 1.0,
+                "count_scans": 2
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.5333333333333333,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 3.1622776601683795,
+                "count_scans": 2
+            },
+            {
+                "current_step": 999,
+                "percent_explored": 0.6466666666666666,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 10.63014581273465,
+                "count_scans": 3
+            },
+            {
+                "current_step": 134,
+                "percent_explored": 0.4666666666666667,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 3.605551275463989,
+                "count_scans": 1
+            },
+            {
+                "current_step": 554,
+                "percent_explored": 0.14,
+                "percent_complete": 0.041666666666666664,
+                "dist_from_start": 0.0,
+                "count_scans": 1
+            },
+            {
+                "current_step": 861,
+                "percent_explored": 0.7333333333333333,
+                "percent_complete": 0.08333333333333333,
+                "dist_from_start": 13.152946437965905,
+                "count_scans": 3
+            }
+        ]
+    ]
+}

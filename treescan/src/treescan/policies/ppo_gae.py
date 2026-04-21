@@ -103,7 +103,7 @@ class DiscretePPOGAE(Policy):
 
         if resume_epoch is not None and folderpath is not None:
             try:
-                load_epoch, seed, training_returns, training_lengths, losses, training_mcreturns = self.load_checkpoint(folderpath,resume_epoch)
+                load_epoch, seed, training_returns, training_lengths, losses, training_mcreturns, entropies = self.load_checkpoint(folderpath,resume_epoch)
                 print(f"Resuming from Epoch {load_epoch}")
             except Exception as e:
                 raise RuntimeError(f"Failed to resume from checkpoint at Epoch {resume_epoch}") from e
@@ -113,6 +113,7 @@ class DiscretePPOGAE(Policy):
             training_mcreturns = []
             training_lengths = []
             losses = []
+            entropies = []
 
             seed = start_seed
 
@@ -120,16 +121,19 @@ class DiscretePPOGAE(Policy):
         epoch = start_epoch
 
         try:
-            for epoch in tqdm(range(start_epoch,epochs),desc="PPO",leave=False,position=1):
+            pbarepoch = tqdm(range(start_epoch,epochs),desc="PPO GAE",leave=False,position=1)
+            for epoch in pbarepoch:
 
                 # Create batch of data
                 T_batch = []
+                total_length = 0
                 for i in tqdm(range(batch_size),desc="Batch",leave=False,position=2):
                     if seed is not None:
                         torch.manual_seed(seed)
 
                     T = generate_trajectory(env,self,seed=seed)
                     training_lengths.append(len(T))
+                    total_length += len(T)
 
                     # Calculate values
                     G = 0
@@ -140,18 +144,23 @@ class DiscretePPOGAE(Policy):
                         # Grab data
                         a = self.action_to_index[a]
                         with torch.no_grad(): 
-                            logits = self.logit_network(obs)
+                            logits = self.logit_network(obs).squeeze(0) # Otherwise is [1, A] and broadcasting is wrong!!
                             dist = torch.distributions.Categorical(logits=logits)
                             log_prob = dist.log_prob(torch.tensor(a,dtype=torch.int64))
 
-                            value = self.value_network(obs).squeeze(-1) # Squeezing to get rid of batch dimension after network
-                            next_value = self.value_network(next_obs).squeeze(-1) if not term else torch.zeros_like(value)
+                            value = self.value_network(obs).squeeze(0).squeeze(-1) # Squeezing to get rid of batch dimension after network and make scalar
+                            next_value = self.value_network(next_obs).squeeze(0).squeeze(-1) if not term else torch.zeros_like(value) # This should be done not term!
 
                         # Calculations
                         G = r + gamma*G*(1-term)
                         delta = r + gamma*next_value*(1-term) - value
                         a_gae = delta + gamma * lambda_gae * a_gae*(1-term)
                         G_gae = a_gae + value
+
+                        # print(f"obs: {obs}")
+                        # print(f"term:{term} | r:{r} | value:{value} | next_value:{next_value} | delta:{delta} | a_gae:{a_gae} | G_gae: {G_gae} | G_MC: {G}")
+                        # print(f"logits: {logits[0].detach()}")
+                        # print(f"logit shape: {logits.detach().shape}")
 
                         # Save transition
                         new_transition = (obs.detach(),
@@ -166,6 +175,10 @@ class DiscretePPOGAE(Policy):
                     training_returns.append(G_gae.item())
                     training_mcreturns.append(G)
 
+                    # Update PBar
+                    avg_length = total_length/batch_size
+
+                    # Seed
                     if start_seed is not None:
                         seed += 1
 
@@ -183,6 +196,8 @@ class DiscretePPOGAE(Policy):
 
 
                 # Normalize
+                adv_mean = adv_batch.mean().item()
+                adv_std = adv_batch.std().item()
                 if adv_batch.shape[0] > 1 and self.do_normalize_advantage:
                     adv_batch = (adv_batch - torch.mean(adv_batch))/(torch.std(adv_batch) + 1e-8)
 
@@ -194,12 +209,20 @@ class DiscretePPOGAE(Policy):
                     new_logits = self.logit_network(obs_batch)
                     dist = torch.distributions.Categorical(logits=new_logits)
                     new_log_prob_batch = dist.log_prob(a_batch)
+                    # print(f"adv*new_log_prob max: {torch.max((adv_batch * new_log_prob_batch))} | min: {torch.min((adv_batch * new_log_prob_batch))}")
 
                     new_value_batch = self.value_network(obs_batch).squeeze(-1) # make it [batch,] or scalar per batch
 
+                    
+                    # print(f"new_log_prob_batch shape: {new_log_prob_batch.detach().shape}")
+                    # print(f"old_log_prob_batch shape: {old_log_prob_batch.detach().shape}")
+                    # print(f"new_value_batch shape: {new_value_batch.detach().shape}")
+
                     # Optimizer steps
                     self.logit_optimizer.zero_grad()
-                    logit_loss = self.logit_loss_fn(adv_batch,old_log_prob_batch,new_log_prob_batch,clip_epsilon,torch.mean(dist.entropy()))
+                    entropy = torch.mean(dist.entropy())
+                    # print(f"entropy: {entropy.item()} | advantage max: {torch.max(adv_batch)}, min:  {torch.min(adv_batch)}")
+                    logit_loss = self.logit_loss_fn(adv_batch,old_log_prob_batch,new_log_prob_batch,clip_epsilon,entropy)
                     logit_loss.backward()
                     self.logit_optimizer.step()
 
@@ -211,6 +234,10 @@ class DiscretePPOGAE(Policy):
 
                 # append final loss
                 losses.append([logit_loss.item(),value_loss.item()])
+                entropies.append(entropy.item())
+
+                # Update PBar
+                pbarepoch.set_postfix_str(f"Len:{avg_length:5.1f}|Entrpy: {entropy:5.3f}|Adv mn:{adv_mean:5.2f}/std:{adv_std:5.2f}")
 
 
                 # Save intermediate checkpoint
@@ -223,7 +250,8 @@ class DiscretePPOGAE(Policy):
                             training_returns,
                             training_lengths,
                             losses,
-                            training_mcreturns
+                            training_mcreturns,
+                            entropies
                         )
 
             # Save final checkpoint
@@ -235,7 +263,8 @@ class DiscretePPOGAE(Policy):
                                 training_returns,
                                 training_lengths,
                                 losses,
-                                training_mcreturns
+                                training_mcreturns,
+                                entropies
                             )
                 print(f"Finished training and saved checkpoint at epoch {epoch} to file at {folderpath}")
 
@@ -264,7 +293,8 @@ class DiscretePPOGAE(Policy):
                                 training_returns,
                                 training_lengths,
                                 losses,
-                                training_mcreturns
+                                training_mcreturns,
+                                entropies
                             )
                 
             info = {
@@ -278,7 +308,8 @@ class DiscretePPOGAE(Policy):
                 "clip_epsilon": clip_epsilon,
                 "gamma": gamma,
                 "start_seed": start_seed,
-                "epoch_completed": epoch
+                "epoch_completed": epoch,
+                "entropies": entropies,
             }
 
             return info
@@ -324,7 +355,7 @@ class DiscretePPOGAE(Policy):
 
 
     
-    def save_checkpoint(self, folderpath, epoch, seed, training_returns, training_lengths, losses, training_mcreturns):
+    def save_checkpoint(self, folderpath, epoch, seed, training_returns, training_lengths, losses, training_mcreturns, entropies):
         """Save a training checkpoint to a file"""
         path = f"{folderpath}/checkpoints"
         os.makedirs(path, exist_ok=True)
@@ -340,7 +371,8 @@ class DiscretePPOGAE(Policy):
             "training_mcreturns": training_mcreturns,
             "training_lengths": training_lengths,
             "losses": losses,
-            "rng_state": torch.get_rng_state()
+            "rng_state": torch.get_rng_state(),
+            "entropies": entropies
         }
 
         torch.save(checkpoint, f"{path}/ckpt_{epoch}.pt")
@@ -363,4 +395,4 @@ class DiscretePPOGAE(Policy):
         if "rng_state" in checkpoint.keys():
             torch.set_rng_state(checkpoint["rng_state"])
 
-        return checkpoint["epoch"], checkpoint["seed"], checkpoint["training_returns"], checkpoint["training_lengths"], checkpoint["losses"], checkpoint["training_mcreturns"]
+        return checkpoint["epoch"], checkpoint["seed"], checkpoint["training_returns"], checkpoint["training_lengths"], checkpoint["losses"], checkpoint["training_mcreturns"], checkpoint["entropies"]

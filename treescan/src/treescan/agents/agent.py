@@ -58,24 +58,29 @@ class Agent():
         """
         episode_lengths = np.empty((runs,episodes))*np.nan
         episode_returns = np.empty((runs,episodes))*np.nan
+        episode_infos = []
 
         if start_seed is not None:
             seed = start_seed
 
         for j in tqdm(range(runs),desc="Runs",leave=False):
+            run_infos = []
             for i in tqdm(range(episodes),desc="Episodes",leave=False):
                 T = self.generate_trajectory(environment,max_steps=max_steps,seed=seed)
             
                 G = 0
                 for transition in reversed(T):
                     s,a,next_s,r,term,trunc,_ = transition
-                    G = r + gamma*G
+                    G = r + gamma*G*(1 - term)
 
                 episode_lengths[j,i] = len(T)
                 episode_returns[j,i] = G
 
                 if start_seed is not None:
                     seed += 1
+
+                run_infos.append(T[-1][6])
+            episode_infos.append(run_infos)
 
         info = {
             "test_name": test_name if test_name is not None else "unnamed_test",
@@ -85,6 +90,7 @@ class Agent():
             "episodes": episodes,
             "gamma": gamma,
             "start_seed": start_seed,
+            "last_env_info": episode_infos # Get info from last transition
         }
 
         if folderpath is not None:
