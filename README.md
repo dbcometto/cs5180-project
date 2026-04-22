@@ -1,21 +1,20 @@
 # CS-5180 RL Project
 
-This repo contains code to create an RL environment, train agents on policies to act within them, and evaluate the performance of the agents.
+This repo contains code to create the RL TreeScan environment, train agents on policies to act within it, and evaluate the performance of the agents.  This package was used for the CS 5180 RL final project.
 
 
 ## Install
-To get started, (after activating a venv and adding it to the `.gitignore`) run
+To get started, after activate a venv and adding ensure it is in the `.gitignore`, then install the treescan package with
 ```bash
-pip install -r requirements.txt
+pip install -e ./treescan
 ```
-from the repository root.
-
+from the package root.
 
 ## Description
 
-The `treescan` folder is a python package for all the reusable code, the `experiments` folder has a bunch of one-off tests.
+The `treescan` folder is a python package for all the reusable code, the `experiments` folder contains the tests.
 
-A few reusable objects, which are implemented to make things easier, are in the table below.
+Reusable object categories, which are implemented to make things easier, are in the table below.
 
 | Object | Description |
 |---------------|-------------|
@@ -27,7 +26,7 @@ A few reusable objects, which are implemented to make things easier, are in the 
 
 ## Testing 
 
-The workflow so far has been to: 
+The workflow has been to: 
 1. Implement the algorithm(s) inside the `treescan` package
 2. In an experiment folder, create: 
    - a training script to produce the agents and save them to a file 
