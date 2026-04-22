@@ -4,7 +4,7 @@ This repo contains code to create the RL TreeScan environment, train agents on p
 
 
 ## Install
-To get started, after activate a venv and adding ensure it is in the `.gitignore`, then install the `treescan` package and its prerequisites with
+To get started, activate a venv and ensure it is in the `.gitignore`, then install the `treescan` package and its prerequisites with
 ```bash
 pip install -r requirements.txt
 ```
